@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aces über Europa – Browser-Edition (Bf 109) – brett.martuni.de</title>
+<meta name="description" content="Browser-Flugsimulation im Stil der 90er: Bf 109 (Me 109) als Standardflugzeug, VGA 320x200, Tastatursteuerung, deutsche Hilfe.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>★ Aces über Europa <span style="color:#888">/ Browser-Edition</span></h1>
+  <span class="sub">VGA 320×200 &bull; Tastatur &bull; Standard: Bf 109 G-6 &bull; Fan-Hommage, kein Original-Remake</span>
+</header>
+<div id="wrap">
+  <div id="screen-bezel">
+    <div id="screen">
+      <canvas id="game" width="320" height="200"></canvas>
+    </div>
+    <div id="hud-bar">
+      <button id="btnStart" class="primary">▶ Start (Enter)</button>
+      <button id="btnHelp">? Hilfe (H)</button>
+      <button id="btnPause">⏸ Pause (P)</button>
+      <button id="btnNew">↻ Neue Mission (N)</button>
+      <button id="btnVga">VGA: 320×200 (V)</button>
+      <button id="btnSound">Sound: an (L)</button>
+      <button id="btnCockpit">Cockpit: an (C)</button>
+    </div>
+    <div id="status">Bereit. Drücke ENTER oder START.</div>
+  </div>
+
+  <div id="help">
+    <h2>⌨️ Deutsche Hilfe – Tastatursteuerung</h2>
+    <table>
+      <tr><th>Taste</th><th>Wirkung</th><th>Bemerkung im Stil 1993</th></tr>
+      <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Querruder: rollen + Kurve</td><td>Mit <kbd>↓</kbd> in die Kurve ziehen</td></tr>
+      <tr><td><kbd>↑</kbd> / <kbd>↓</kbd></td><td>Höhenruder: Nase runter / hoch</td><td>↑ = drücken, ↓ = ziehen (wie Steuerknüppel)</td></tr>
+      <tr><td><kbd>A</kbd> / <kbd>D</kbd></td><td>Seitenruder links / rechts</td><td>Feinkorrektur beim Zielen</td></tr>
+      <tr><td><kbd>W</kbd> / <kbd>S</kbd> oder <kbd>+</kbd> / <kbd>-</kbd></td><td>Gas mehr / weniger</td><td>Motor: DB 605, 0–100 %</td></tr>
+      <tr><td><kbd>Leertaste</kbd></td><td>Feuern: 2× MG 131 + MG 151/20</td><td>Kurze Feuerstöße! Munition: 500</td></tr>
+      <tr><td><kbd>F</kbd></td><td>Landeklappen umschalten</td><td>Langsam &lt; 300 km/h empfohlen</td></tr>
+      <tr><td><kbd>G</kbd></td><td>Fahrwerk ein / aus</td><td>Nur für Optik + Bremswirkung</td></tr>
+      <tr><td><kbd>M</kbd></td><td>Taktische Karte ein / aus</td><td>Radar-Übersicht Kanal</td></tr>
+      <tr><td><kbd>C</kbd></td><td>Cockpit ein / aus</td><td>Mehr Sicht ohne Cockpit</td></tr>
+      <tr><td><kbd>V</kbd></td><td>VGA-Modus: 320×200 ↔ 640×400</td><td>Original war 320×200 (Mode 13h)</td></tr>
+      <tr><td><kbd>L</kbd></td><td>Sound an / aus</td><td>Motor + MG per WebAudio</td></tr>
+      <tr><td><kbd>H</kbd> oder <kbd>F1</kbd></td><td>Diese Hilfe ein / aus</td><td>Pause bleibt aktiv</td></tr>
+      <tr><td><kbd>P</kbd> / <kbd>Esc</kbd></td><td>Pause</td><td>—</td></tr>
+      <tr><td><kbd>N</kbd></td><td>Neue Mission</td><td>Wellen werden zurückgesetzt</td></tr>
+      <tr><td><kbd>R</kbd> / <kbd>Enter</kbd></td><td>Neustart / Start</td><td>Nach Abschuss oder am Anfang</td></tr>
+    </table>
+    <p><b>Flugzeug (Standard): Messerschmitt Bf 109 G-6</b> – Spitzname „Me 109“.
+    Motor DB 605, Bewaffnung 2× 13-mm-MG + 20-mm-Motorkanone.
+    Gegner: Spitfire Mk.V, P-51 Mustang, B-17-Bomber (Welle 2+).<br>
+    <b>Ziel:</b> Überlebe über dem Ärmelkanal, schieße Wellen ab, achte auf Geschwindigkeit (Abriss &lt; 180 km/h) und Höhe (Boden = Aus!).
+    Freund-Feuer gibt es nicht – alles vor dem Visier ist Feind.</p>
+    <p><b>VGA-Auflösung:</b> Intern wird in 320×200 gerechnet (Original-VGA Mode 13h, 256 Farben) und per CSS pixelig hochskaliert. Mit <kbd>V</kbd> auf 640×400 (doppelte Pixel) umschalten – Look bleibt retro.</p>
+    <p style="color:#888">Hinweis: Freie Fan-Hommage an das Spielprinzip von „Aces over Europe" (Dynamix, 1993). Kein Original-Code, keine Original-Grafiken. Alle Sprites/Code hier sind neu und MIT-lizenziert.</p>
+  </div>
+
+  <div id="mission" style="font-size:13px;margin-top:10px;background:#101418;border:1px solid #333;padding:10px">
+    <b style="color:#ffaa00">Einsatzbefehl – Kanalfront, 1944:</b>
+    Starte mit deiner Bf 109 vom Feldflugplatz. Erste Welle: 3 Spitfires. Danach Bomber + Begleitschutz.
+    Munition ist begrenzt, der Motor überhitzt bei Vollgas auf Dauer nicht – aber Vorsicht bei Sturzflug &gt; 650 km/h (Struktur!).
+    Viel Erfolg, Kamerad!
+  </div>
+</div>
+<footer>
+  brett.martuni.de &bull; Bf 109 Browser-Sim &bull; Steuerung: nur Tastatur nötig &bull; Datei: index.html + game.js, keine Cookies, kein Tracking
+</footer>
+<script src="game.js"></script>
+</body>
+</html>

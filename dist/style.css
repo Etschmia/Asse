@@ -1,0 +1,39 @@
+/* VGA-Design: dunkler Hintergrund, CGA/VGA-Palette, pixelig */
+:root{
+  --vga-bg:#000;
+  --vga-fg:#aaaaaa;
+  --vga-amber:#ffaa00;
+  --vga-green:#00aa00;
+  --vga-cyan:#00aaaa;
+  --vga-red:#aa0000;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#0a0a0a;color:#ccc;font-family:"IBM Plex Mono","Courier New",monospace}
+body{display:flex;flex-direction:column;align-items:center;min-height:100vh}
+header{width:100%;max-width:1000px;padding:10px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{font-size:18px;margin:0;color:#ffaa00;letter-spacing:1px;text-transform:uppercase}
+header .sub{font-size:12px;color:#888}
+#wrap{width:100%;max-width:1000px;padding:0 14px 20px}
+#screen-bezel{background:#111;border:4px solid #333;border-radius:8px;padding:10px;box-shadow:0 0 0 2px #000,0 8px 40px #000}
+#screen{position:relative;background:#000;line-height:0}
+canvas#game{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;background:#000;cursor:crosshair}
+/* Scanlines für echten VGA-Look */
+#screen::after{content:"";position:absolute;inset:10px;pointer-events:none;
+  background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0 2px,rgba(0,0,0,.18) 2px 3px);
+  mix-blend-mode:multiply}
+#hud-bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:12px}
+button,.btn{background:#222;color:#ffaa00;border:2px outset #555;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer;text-transform:uppercase}
+button:hover{background:#333}
+button:active{border-style:inset}
+button.primary{background:#3a2a00;border-color:#ffaa00}
+#status{font-size:12px;color:#00ff00;min-height:18px;margin-top:6px;white-space:pre-wrap}
+#help{font-size:13px;line-height:1.5;background:#000;border:2px solid #00aaaa;padding:12px;margin-top:10px;color:#ccc}
+#help h2{color:#00ffff;margin:0 0 8px;font-size:15px}
+#help table{border-collapse:collapse;width:100%}
+#help td,#help th{border:1px solid #333;padding:4px 6px;text-align:left;font-size:12px}
+#help th{color:#ffaa00}
+kbd{background:#222;border:1px solid #555;border-bottom-width:3px;padding:1px 6px;border-radius:4px;font-family:inherit;color:#fff}
+.hidden{display:none!important}
+footer{font-size:11px;color:#666;padding:10px;text-align:center;max-width:1000px}
+a{color:#00aaaa}
+@media(max-width:600px){header h1{font-size:15px}}
