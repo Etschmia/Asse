@@ -10,14 +10,32 @@ ctx.imageSmoothingEnabled = false;
 const statusEl = document.getElementById('status');
 const helpEl = document.getElementById('help');
 
-let SCALE = 1; // 1 = 320x200, 2 = 640x400
-function setVga(hi){
-  SCALE = hi ? 2 : 1;
+const VGA_MODES = [
+  {name:'320×200', scale:1, detail:0},
+  {name:'640×400', scale:2, detail:1},
+  {name:'960×600 HD', scale:3, detail:2},
+];
+let SCALE = 1; // Backing-Store-Skalierung, Logik bleibt 320×200 (VW/VH)
+let vgaIdx = 0;
+function setVgaMode(i){
+  vgaIdx = ((i % VGA_MODES.length) + VGA_MODES.length) % VGA_MODES.length;
+  const m = VGA_MODES[vgaIdx];
+  SCALE = m.scale;
   canvas.width = VW * SCALE;
   canvas.height = VH * SCALE;
   ctx.imageSmoothingEnabled = false;
-  document.getElementById('btnVga').textContent = hi ? 'VGA: 640×400 (V)' : 'VGA: 320×200 (V)';
-  G.vgaHi = hi;
+  document.getElementById('btnVga').textContent = 'VGA: ' + m.name + ' (V)';
+  G.vgaHi = vgaIdx > 0;
+  G.detail = m.detail;
+}
+function setVga(hi){
+  setVgaMode(hi ? 1 : 0);
+}
+function cycleVga(){
+  const prev = vgaIdx;
+  setVgaMode(vgaIdx + 1);
+  const m = VGA_MODES[vgaIdx];
+  if(prev !== vgaIdx) setMsg('Auflösung: ' + m.name + (m.detail >= 2 ? ' – mehr Details' : (m.detail === 1 ? ' – schärfer' : ' – klassisch')));
 }
 
 // ---------- Zustand ----------
@@ -28,6 +46,9 @@ const G = {
   cockpit: true,
   sound: true,
   vgaHi: false,
+  detail: 0,    // 0 = klassisch, 1 = schärfer, 2 = HD mit mehr Details
+  hitMark: 0,   // Treffer-Bestätigung am Visier (Sekunden)
+  hitKill: 0,   // Abschuss-Bestätigung (Sekunden)
   time: 0,
   kills: 0,
   wave: 0,
@@ -80,6 +101,7 @@ function spawnWave(n){
     else if(n>=2 && i%3===0) type='mustang';
     else if(n>=3 && i%2===0) type='mustang';
     const a = rnd(0,Math.PI*2), d = rnd(1500,3500);
+    const hp0 = type==='b17'?120:(type==='mustang'?45:35);
     enemies.push({
       type,
       x: P.x + Math.sin(a)*d,
@@ -87,7 +109,8 @@ function spawnWave(n){
       z: P.z + Math.cos(a)*d,
       heading: rnd(0,Math.PI*2),
       speed: type==='b17'?300:rnd(330,430),
-      hp: type==='b17'?120:(type==='mustang'?45:35),
+      hp: hp0,
+      maxHp: hp0,
       alive:true,
       fireCd: rnd(1,3),
       wob: rnd(0,9),
@@ -103,7 +126,7 @@ function resetMission(){
   P.speed=320; P.throttle=0.7; P.ammo=500; P.hp=100;
   P.flaps=false; P.gear=false; P.fireCd=0; P.dead=false;
   bullets=[]; ebullets=[]; parts=[];
-  G.kills=0; G.flash=0; G.shake=0; G.mode='fly'; G.paused=false; G.started=true;
+  G.kills=0; G.flash=0; G.shake=0; G.hitMark=0; G.hitKill=0; G.mode='fly'; G.paused=false; G.started=true;
   buildWorld();
   spawnWave(1);
 }
@@ -158,7 +181,9 @@ window.addEventListener('keydown', e=>{
   else if(k==='r'||k==='R') resetMission();
   else if(k==='m'||k==='M') G.showMap=!G.showMap;
   else if(k==='c'||k==='C') { G.cockpit=!G.cockpit; document.getElementById('btnCockpit').textContent='Cockpit: '+(G.cockpit?'an (C)':'aus (C)'); }
-  else if(k==='v'||k==='V') setVga(!G.vgaHi);
+  else if(k==='v'||k==='V') cycleVga();
+  else if(k==='x'||k==='X') cheatRepair();
+  else if(k==='b'||k==='B') cheatAmmo();
   else if(k==='l'||k==='L') { G.sound=!G.sound; document.getElementById('btnSound').textContent='Sound: '+(G.sound?'an (L)':'aus (L)'); }
   else if(k==='f'||k==='F') { if(G.mode==='fly'){ P.flaps=!P.flaps; setMsg(P.flaps?'Landeklappen AUSGEFAHREN':'Landeklappen EINGEFAHREN'); } }
   else if(k==='g'||k==='G') { if(G.mode==='fly'){ P.gear=!P.gear; setMsg(P.gear?'Fahrwerk AUSGEFAHREN':'Fahrwerk EINGEFAHREN'); } }
@@ -170,7 +195,9 @@ document.getElementById('btnStart').onclick=()=>{ audioInit(); resetMission(); }
 document.getElementById('btnHelp').onclick=HELP_TOGGLE;
 document.getElementById('btnPause').onclick=()=>{ if(G.mode==='fly'){G.paused=!G.paused;} };
 document.getElementById('btnNew').onclick=()=>resetMission();
-document.getElementById('btnVga').onclick=()=>setVga(!G.vgaHi);
+document.getElementById('btnVga').onclick=()=>cycleVga();
+if(document.getElementById('btnRepair')) document.getElementById('btnRepair').onclick=()=>{ audioInit(); cheatRepair(); };
+if(document.getElementById('btnAmmo')) document.getElementById('btnAmmo').onclick=()=>{ audioInit(); cheatAmmo(); };
 document.getElementById('btnSound').onclick=()=>{ G.sound=!G.sound; document.getElementById('btnSound').textContent='Sound: '+(G.sound?'an (L)':'aus (L)'); };
 document.getElementById('btnCockpit').onclick=()=>{ G.cockpit=!G.cockpit; document.getElementById('btnCockpit').textContent='Cockpit: '+(G.cockpit?'an (C)':'aus (C)'); };
 
@@ -184,6 +211,8 @@ function update(dt){
   if(G.msgT>0) G.msgT-=dt;
   if(G.flash>0) G.flash-=dt*2;
   if(G.shake>0) G.shake-=dt*3;
+  if(G.hitMark>0) G.hitMark-=dt;
+  if(G.hitKill>0) G.hitKill-=dt;
   if(P.fireCd>0) P.fireCd-=dt;
 
   // --- Steuerung ---
@@ -201,11 +230,11 @@ function update(dt){
   if(down) pitchIn+=1;  // ziehen
   P.pitch += pitchIn*dt*0.9*agility;
   P.pitch = Math.max(-1.2,Math.min(1.2,P.pitch));
-  // Seitenruder: Fein-Heading
-  if(rudL) P.heading+=dt*0.35;
-  if(rudR) P.heading-=dt*0.35;
-  // Kurve aus Rollen
-  P.heading -= P.roll*dt*(0.55+P.speed/900);
+  // Seitenruder: Fein-Heading (A=links=Kurs kleiner, D=rechts=Kurs größer)
+  if(rudL) P.heading-=dt*0.35;
+  if(rudR) P.heading+=dt*0.35;
+  // Kurve aus Rollen (rechts rollen = Rechtskurve = Kurs größer)
+  P.heading += P.roll*dt*(0.55+P.speed/900);
   // Gas
   if(keys['w']||keys['+']||keys['=']) P.throttle=Math.min(1,P.throttle+dt*0.6);
   if(keys['s']||keys['-']||keys['_']) P.throttle=Math.max(0,P.throttle-dt*0.6);
@@ -246,7 +275,9 @@ function update(dt){
     P.fireCd=0.09; P.ammo-=2;
     const spread=0.006;
     for(let i=0;i<2;i++){
-      bullets.push({x:P.x+v.x*8, y:P.y+v.y*8-1, z:P.z+v.z*8,
+      const sx=P.x+v.x*8, sy=P.y+v.y*8-1, sz=P.z+v.z*8;
+      bullets.push({x:sx, y:sy, z:sz,
+        px:sx, py:sy, pz:sz,
         vx:v.x*900+(Math.random()-0.5)*spread*900, vy:v.y*900+(Math.random()-0.5)*spread*900, vz:v.z*900+(Math.random()-0.5)*spread*900,
         life:1.6});
     }
@@ -269,6 +300,34 @@ function update(dt){
   engineSound();
 }
 
+// ---------- Cheats (X = Reparatur, B = Munition) ----------
+function cheatRepair(){
+  if(!G.started||(G.mode!=='fly'&&G.mode!=='dead')){ setMsg('Erst ENTER = Start, dann X = Reparatur'); return; }
+  if(G.mode==='dead'){
+    // Wiederbeleben in der Luft (Cheat)
+    G.mode='fly'; P.dead=false; G.paused=false;
+    P.hp=100; P.ammo=Math.max(P.ammo,200);
+    P.y=Math.max(P.y,900); if(!(P.y>50)) P.y=1200;
+    P.speed=Math.max(P.speed,300); P.pitch=0; P.roll=0;
+    G.flash=0; G.shake=0;
+    setMsg('CHEAT: Flugzeug instand gesetzt – zurück in der Luft!');
+    status('CHEAT Reparatur: 100 % Hülle, weiter gehts!');
+  } else {
+    P.hp=100; G.flash=0;
+    setMsg('CHEAT: Flugzeug instand gesetzt – 100 % Hülle');
+    status('CHEAT Reparatur: 100 % Hülle');
+  }
+  noiseBurst(0.2,0.15,600);
+}
+function cheatAmmo(){
+  if(!G.started||(G.mode!=='fly'&&G.mode!=='dead')){ setMsg('Erst ENTER = Start, dann B = Munition'); return; }
+  P.ammo=500;
+  if(G.mode==='dead'){ setMsg('CHEAT: Volle Munition – 500 Schuss (trotzdem ENTER für Neustart)'); }
+  else { setMsg('CHEAT: Volle Munition – 500 Schuss'); }
+  status('CHEAT Munition: 500 Schuss');
+  noiseBurst(0.2,0.15,900);
+}
+
 function crash(reason){
   G.mode='dead'; P.dead=true;
   explode(P.x,P.y,P.z,40,'#ff8800');
@@ -278,9 +337,10 @@ function crash(reason){
 }
 
 function updateBullets(dt){
-  // eigene
+  // eigene (mit Leuchtspur: Vorposition merken)
   for(let i=bullets.length-1;i>=0;i--){
     const b=bullets[i]; b.life-=dt;
+    b.px=b.x; b.py=b.y; b.pz=b.z;
     b.x+=b.vx*dt; b.y+=b.vy*dt; b.z+=b.vz*dt; b.vy-=dt*4;
     if(b.life<=0||b.y<0){bullets.splice(i,1);continue;}
     for(const e of enemies){
@@ -288,10 +348,13 @@ function updateBullets(dt){
       const r = e.type==='b17'?26:13;
       if(dist3(b.x,b.y,b.z,e.x,e.y,e.z)<r){
         e.hp-= (e.type==='b17'?6:11);
-        e.hitT=0.15;
-        spark(b.x,b.y,b.z,'#ffff00',4);
+        e.hitT=0.3;
+        G.hitMark=0.4;
+        spark(b.x,b.y,b.z,'#ffff00',6);
+        spark(b.x,b.y,b.z,'#ff8800',3);
+        noiseBurst(0.06,0.18,2600); // Treffer-Bestätigung (hell)
         bullets.splice(i,1);
-        if(e.hp<=0&&e.alive){ e.alive=false; G.kills++; explode(e.x,e.y,e.z,e.type==='b17'?46:26,'#ff4400'); noiseBurst(0.5,0.4,500); setMsg(getKillText(e)+'  ('+G.kills+' Abschüsse)'); P.ammo=Math.min(500,P.ammo+40); }
+        if(e.hp<=0&&e.alive){ e.alive=false; G.kills++; G.hitKill=0.9; G.hitMark=0.4; explode(e.x,e.y,e.z,e.type==='b17'?46:26,'#ff4400'); noiseBurst(0.5,0.4,500); setMsg(getKillText(e)+'  ('+G.kills+' Abschüsse)'); P.ammo=Math.min(500,P.ammo+40); }
         break;
       }
     }
@@ -299,6 +362,7 @@ function updateBullets(dt){
   // feindliche
   for(let i=ebullets.length-1;i>=0;i--){
     const b=ebullets[i]; b.life-=dt;
+    b.px=b.x; b.py=b.y; b.pz=b.z;
     b.x+=b.vx*dt; b.y+=b.vy*dt; b.z+=b.vz*dt;
     if(b.life<=0){ebullets.splice(i,1);continue;}
     if(dist3(b.x,b.y,b.z,P.x,P.y,P.z)<12){
@@ -353,7 +417,7 @@ function updateEnemies(dt){
       if(dot>0.965){
         e.fireCd = e.type==='b17'?0.5:rnd(0.5,1.2);
         const sp=900;
-        ebullets.push({x:e.x,y:e.y,z:e.z,vx:nx*sp+rnd(-25,25),vy:ny*sp+rnd(-25,25),vz:nz*sp+rnd(-25,25),life:1.8});
+        ebullets.push({x:e.x,y:e.y,z:e.z,px:e.x,py:e.y,pz:e.z,vx:nx*sp+rnd(-25,25),vy:ny*sp+rnd(-25,25),vz:nz*sp+rnd(-25,25),life:1.8});
         noiseBurst(0.07,0.08,900);
       } else e.fireCd=0.25;
     }
@@ -387,7 +451,8 @@ function updateFlak(dt){
 function project(wx,wy,wz){
   const dx=wx-P.x, dy=wy-P.y, dz=wz-P.z;
   // in Flugzeug-Koordinaten drehen (nur Heading, Pitch kommt über Horizont)
-  const ch=Math.cos(-P.heading), sh=Math.sin(-P.heading);
+  // Korrekt für Kompass-Heading (0=Nord, Uhrzeigersinn): fwd=dx*sin(h)+dz*cos(h), rechts=dx*cos(h)-dz*sin(h)
+  const ch=Math.cos(P.heading), sh=Math.sin(P.heading);
   const rx=dx*ch-dz*sh;
   const rz=dx*sh+dz*ch;
   const fwd=rz, right=rx, up=dy;
@@ -416,8 +481,28 @@ function draw(){
   const draws=[];
   for(const e of enemies) if(e.alive){const pr=project(e.x,e.y,e.z); if(pr&&pr.x>-40&&pr.x<VW+40&&pr.y>-40&&pr.y<VH+40) draws.push({d:pr.dist,fn:()=>drawEnemy(e,pr)});}
   for(const p of parts){const pr=project(p.x,p.y,p.z); if(pr&&pr.x>-10&&pr.x<VW+10&&pr.y>-10&&pr.y<VH+10) draws.push({d:pr.dist,fn:()=>drawPart(p,pr)});}
-  for(const b of bullets){const pr=project(b.x,b.y,b.z); if(pr) draws.push({d:pr.dist,fn:()=>{ctx.fillStyle='#ffff00';const s=Math.max(1,pr.s*3);ctx.fillRect(pr.x,pr.y,s,s);}});}
-  for(const b of ebullets){const pr=project(b.x,b.y,b.z); if(pr) draws.push({d:pr.dist,fn:()=>{ctx.fillStyle='#ff3333';ctx.fillRect(pr.x,pr.y,2,2);}});}
+  for(const b of bullets){const pr=project(b.x,b.y,b.z); if(pr){const pr0=project(b.px,b.py,b.pz)||pr; draws.push({d:pr.dist,fn:()=>{
+    // Leuchtspur: immer sichtbarer Schweif (feste Pixellänge hinter dem Kopf)
+    let dx=pr.x-pr0.x, dy=pr.y-pr0.y;
+    let len=Math.sqrt(dx*dx+dy*dy);
+    if(len<0.5){ dx=pr.x-VW/2; dy=pr.y-VH*0.46; len=Math.sqrt(dx*dx+dy*dy)||1; }
+    const TL = G.detail>=2 ? 12 : 8; // Schweiflänge in Logik-Pixeln
+    const tx=pr.x-dx/len*TL, ty=pr.y-dy/len*TL;
+    ctx.strokeStyle='#ff8800'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(pr.x,pr.y); ctx.stroke();
+    ctx.strokeStyle='#ffff00'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(pr.x,pr.y); ctx.stroke();
+    ctx.fillStyle='#ffffff'; const s=Math.max(1.5,Math.min(4,pr.s*3)); ctx.fillRect(pr.x-s/2,pr.y-s/2,s,s);
+  }});}}
+  for(const b of ebullets){const pr=project(b.x,b.y,b.z); if(pr){const pr0=(b.px!==undefined?project(b.px,b.py,b.pz):null)||pr; draws.push({d:pr.dist,fn:()=>{
+    let dx=pr.x-pr0.x, dy=pr.y-pr0.y;
+    let len=Math.sqrt(dx*dx+dy*dy);
+    if(len<0.5){ dx=pr.x-VW/2; dy=pr.y-VH*0.46; len=Math.sqrt(dx*dx+dy*dy)||1; }
+    const tx=pr.x-dx/len*6, ty=pr.y-dy/len*6;
+    ctx.strokeStyle='#aa2222'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(pr.x,pr.y); ctx.stroke();
+    ctx.fillStyle='#ff3333'; ctx.fillRect(pr.x-1,pr.y-1,2,2);
+  }});}}
   draws.sort((a,b)=>b.d-a.d);
   for(const it of draws) it.fn();
 
@@ -436,8 +521,8 @@ function draw(){
 function drawSkyGround(){
   // Horizont: Pitch + Höhe beeinflussen leicht
   const horizon = VH*0.46 + P.pitch*140;
-  // Himmel mit VGA-Banding (retro!)
-  const bands=12;
+  // Himmel mit VGA-Banding (retro!) – in HD feiner abgestuft
+  const bands = G.detail>=2 ? 28 : (G.detail>=1 ? 18 : 12);
   for(let i=0;i<bands;i++){
     const y0=(horizon/bands)*i;
     const y1=(horizon/bands)*(i+1);
@@ -462,9 +547,15 @@ function drawSkyGround(){
     ctx.fillStyle='#003a6e';
     const waterY=horizon+18;
     if(waterY<VH) ctx.fillRect(0,waterY,VW,VH-waterY);
-    // Feldlinien (Pseudo-Perspektive): horizontale Streifen
+    // Feldlinien (Pseudo-Perspektive): horizontale Streifen – in HD mehr + feiner
     ctx.fillStyle='rgba(0,0,0,0.25)';
-    for(let i=0;i<6;i++){const y=horizon+6+i*i*3; if(y>0&&y<VH)ctx.fillRect(0,y,VW,1);}
+    const lines = G.detail>=2 ? 12 : (G.detail>=1 ? 8 : 6);
+    for(let i=0;i<lines;i++){const y=horizon+6+i*i*2.2; if(y>0&&y<VH)ctx.fillRect(0,y,VW,1);}
+    if(G.detail>=1){
+      // Feldwege / Parzellen in HD: vertikale Fluchten
+      ctx.fillStyle='rgba(255,255,200,0.12)';
+      for(let i=-4;i<=4;i++){const x=VW/2+i*24; if(x>0&&x<VW)ctx.fillRect(x,horizon,1,VH-horizon);}
+    }
   }
   // Horizontlinie bei Rolle drehen (einfach: Linie mit Neigung)
   ctx.save();ctx.translate(VW/2,VH*0.46);ctx.rotate(-P.roll);
@@ -483,9 +574,19 @@ function drawGroundFeats(){
     }
     const pr=project(f.x,0,f.z);
     if(!pr)continue; if(pr.x<0||pr.x>VW||pr.y<0||pr.y>VH)continue;
-    const s=Math.max(1,Math.min(6,pr.s*4));
-    if(f.kind==='dorf'){ctx.fillStyle='#8a6d3b';ctx.fillRect(pr.x-s,pr.y-s,s*2,s*2);ctx.fillStyle='#aa0000';ctx.fillRect(pr.x-s,pr.y-s-1,s*2,1);}
-    else if(f.kind==='wald'){ctx.fillStyle='#004d00';ctx.fillRect(pr.x-s,pr.y-s/2,s*2,s);}
+    const s=Math.max(1,Math.min(G.detail>=2?10:6,pr.s*4));
+    if(f.kind==='dorf'){
+      ctx.fillStyle='#8a6d3b';ctx.fillRect(pr.x-s,pr.y-s,s*2,s*2);ctx.fillStyle='#aa0000';ctx.fillRect(pr.x-s,pr.y-s-1,s*2,1);
+      if(G.detail>=1&&s>=2){
+        // Kirchturm + Details in höherer Auflösung
+        ctx.fillStyle='#6e5630';ctx.fillRect(pr.x-1,pr.y-s-4,2,4);
+        ctx.fillStyle='#dddddd';ctx.fillRect(pr.x-s/2,pr.y-s/2,2,2);
+        if(G.detail>=2&&s>=3){ctx.fillStyle='#3a2d1a';ctx.fillRect(pr.x+s*0.4,pr.y-s*0.6,2,2);ctx.fillRect(pr.x-s*0.7,pr.y-s*0.4,1,2);}
+      }
+    }
+    else if(f.kind==='wald'){ctx.fillStyle='#004d00';ctx.fillRect(pr.x-s,pr.y-s/2,s*2,s);
+      if(G.detail>=2&&s>=3){ctx.fillStyle='#006600';ctx.fillRect(pr.x-s/2,pr.y-s/2-1,s,1);}
+    }
     else{ctx.fillStyle='#2d5a27';ctx.fillRect(pr.x-s/2,pr.y-1,s,2);}
   }
   // Flak-Stellungen
@@ -507,34 +608,66 @@ function drawClouds(){
 
 function drawEnemy(e,pr){
   const dist=pr.dist;
-  let size = Math.max(2,Math.min(e.type==='b17'?70:44, 9000/dist*(e.type==='b17'?2.2:1.4)));
+  const maxSize = e.type==='b17' ? (G.detail>=2?84:70) : (G.detail>=2?54:44);
+  let size = Math.max(2,Math.min(maxSize, 9000/dist*(e.type==='b17'?2.2:1.4)));
   const x=Math.round(pr.x), y=Math.round(pr.y);
   // Typfarben
   let col = e.type==='spit'?'#2d6a2d':(e.type==='mustang'?'#b8b8b8':'#4a4a4a');
   if(e.hitT>0) col='#ffffff';
-  // Fern: Punkt + Entfernung
-  if(dist>1500){ctx.fillStyle=col;ctx.fillRect(x-1,y-1,2,2);
-    if(dist<4000){ctx.fillStyle='#ffffff';ctx.font='6px monospace';ctx.fillText(Math.round(dist)+'m',x+3,y+2);}return;}
+  // Fern: Punkt + Entfernung (Sichtweite wächst mit Detailstufe)
+  const farLim = G.detail>=2 ? 2600 : (G.detail>=1 ? 2000 : 1500);
+  if(dist>farLim){ctx.fillStyle=col;ctx.fillRect(x-1,y-1,2,2);
+    if(dist<5000){ctx.fillStyle='#ffffff';ctx.font='6px monospace';ctx.fillText(Math.round(dist)+'m',x+3,y+2);}return;}
+  // Treffer-Blitz: weißer Rahmen + Kern
+  const w=size, h=Math.max(2,size*0.28);
+  if(e.hitT>0){
+    ctx.fillStyle='#ffff00';
+    ctx.fillRect(x-w/2-1,y-h/2-1,w+2,h+2);
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(x-w/2-2,y-1,w+4,2); // Treffer-Kreuzblitz
+  }
   // Nah: Pixel-Silhouette (Rumpf + Tragflächen + Leitwerk)
   ctx.fillStyle='#000000'; // Schatten
-  const w=size, h=Math.max(2,size*0.28);
   ctx.fillRect(x-w/2+1,y-h/2+1,w,h);
   ctx.fillStyle=col;
   ctx.fillRect(x-w/2,y-h/2,w,h);              // Tragfläche
   ctx.fillRect(x-1.5,y-h/2- size*0.35,3,size*0.9); // Rumpf
   ctx.fillStyle=e.type==='b17'?'#222':'#7a0000';
   ctx.fillRect(x-size*0.12,y-size*0.42,size*0.24,3); // Leitwerk
-  if(e.type==='b17'){ctx.fillStyle='#111';for(let i=-1;i<=1;i+=2)ctx.fillRect(x+i*w*0.22-1,y-h/2-2,2,2);}
+  if(G.detail>=1&&size>8){
+    // Mehr Details in höherer Auflösung: Propeller, Kanzelrahmen, Flügelspitzen
+    ctx.fillStyle='rgba(200,200,200,0.8)';
+    ctx.fillRect(x-1,y-h/2-size*0.35-1,2,1); // Propellerblitz
+    ctx.fillStyle='#000000';
+    ctx.fillRect(x-w/2,y-h/2,w,1);           // Flügelvorderkante
+    if(e.type!=='b17'){ctx.fillStyle='#003333';ctx.fillRect(x-1,y-2,2,1);} // Kanzelrahmen
+  }
+  if(e.type==='b17'){ctx.fillStyle='#111';for(let i=-1;i<=1;i+=2)ctx.fillRect(x+i*w*0.22-1,y-h/2-2,2,2);
+    if(G.detail>=1){ctx.fillStyle='#222';ctx.fillRect(x-w*0.35,y-1,4,2);ctx.fillRect(x+w*0.35-4,y-1,4,2);}
+  }
   else { // Cockpit-Kanzel
     ctx.fillStyle='#00ffff';ctx.fillRect(x-1,y-1,2,2);
+  }
+  // Beschädigt: Rauch + Flamme am Rumpf
+  const hpFrac = e.maxHp ? Math.max(0,e.hp/e.maxHp) : 1;
+  if(hpFrac<0.55&&size>5){
+    ctx.fillStyle='rgba(80,80,80,0.85)';ctx.fillRect(x+2,y-h-2,3,3);
+    if(Math.floor(performance.now()/120)%2===0){ctx.fillStyle='#ff8800';ctx.fillRect(x-1,y-h/2-2,2,2);}
   }
   // Balkenkreuz / Roundel-Andeutung
   ctx.fillStyle=e.type==='spit'?'#0000aa':'#ffffff';
   ctx.fillRect(x+w*0.25,y-1,2,2);
-  // Name + Distanz
+  // Name + Distanz + Schadensbalken
   ctx.fillStyle='#ffffff';ctx.font='6px monospace';
   const nm=e.type==='b17'?'B-17':(e.type==='mustang'?'P-51':'SPIT');
   ctx.fillText(nm+' '+Math.round(dist)+'m',x-14,y-h/2-size*0.35-3);
+  // Hüllenbalken über dem Gegner (Treffer-Feedback)
+  const bw=Math.max(10,Math.min(30,w));
+  const bx=x-bw/2, by=y-h/2-size*0.35-6;
+  ctx.fillStyle='#000000';ctx.fillRect(bx-1,by-1,bw+2,3);
+  ctx.fillStyle=hpFrac>0.55?'#00ff00':(hpFrac>0.25?'#ffff00':'#ff0000');
+  ctx.fillRect(bx,by,bw*hpFrac,1);
+  if(G.detail>=1){ctx.fillStyle='#ffffff';ctx.fillText(Math.round(hpFrac*100)+'%',bx+bw+2,by+1);}
   // Vorhaltelinie wenn sehr nah
   if(dist<300){ctx.strokeStyle='#ff0000';ctx.beginPath();ctx.moveTo(x-4,y+6);ctx.lineTo(x+4,y+6);ctx.stroke();}
 }
@@ -553,6 +686,21 @@ function drawSight(){
   ctx.fillStyle='#00ff00';
   ctx.fillRect(cx,cy-1,1,1);
   ctx.fillRect(cx-12,cy,4,1);ctx.fillRect(cx+8,cy,4,1);
+  // Treffer-Bestätigung: gelbes X bei Treffer, rotes Kreuz bei Abschuss
+  if(G.hitKill>0){
+    ctx.strokeStyle='#ff0000';ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(cx-8,cy-8);ctx.lineTo(cx+8,cy+8);
+    ctx.moveTo(cx+8,cy-8);ctx.lineTo(cx-8,cy+8);
+    ctx.stroke();
+    ctx.fillStyle='#ff0000';ctx.font='6px monospace';ctx.fillText('ABSCHUSS!',cx-16,cy-12);
+  } else if(G.hitMark>0){
+    ctx.strokeStyle='#ffff00';ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(cx-6,cy-6);ctx.lineTo(cx+6,cy+6);
+    ctx.moveTo(cx+6,cy-6);ctx.lineTo(cx-6,cy+6);
+    ctx.stroke();
+  }
   // Munitions-Warnung
   if(P.ammo<100){ctx.fillStyle='#ff0000';ctx.font='6px monospace';ctx.fillText('MUN KNAPP',cx-16,cy+16);}
 }
@@ -593,7 +741,8 @@ function drawHud(){
   ctx.fillStyle='#000';ctx.fillRect(0,0,VW,14);
   ctx.fillStyle='#00ff00';ctx.font='8px monospace';
   const kompass=Math.round(((P.heading*180/Math.PI)%360+360)%360);
-  ctx.fillText(`BF109 ${Math.round(P.speed)}KM/H H:${Math.round(P.y)}M K:${kompass}°`,2,9);
+  const vgaTag = G.detail>=2 ? ' HD' : (G.detail>=1 ? ' HI' : '');
+  ctx.fillText(`BF109 ${Math.round(P.speed)}KM/H H:${Math.round(P.y)}M K:${kompass}°${vgaTag}`,2,9);
   ctx.fillStyle='#ffaa00';ctx.font='8px monospace';
   ctx.fillText(`AB:${G.kills} W:${G.wave} MUN:${P.ammo}`,VW-108,9);
   // Fahrwerk/Klappen-Lämpchen
@@ -667,8 +816,10 @@ function loop(now){
 }
 
 // init
+const GAME_VERSION = 'v2.3-Projektion';
 buildWorld();
 setVga(false);
-status('Bereit. ENTER = Start mit Bf 109. H = Hilfe.');
+status('Bereit. ENTER = Start mit Bf 109. H = Hilfe. (' + GAME_VERSION + ')');
+try{ console.log('[aces] ' + GAME_VERSION + ' geladen. Modi: 320x200/640x400/960x600HD. Cheats: X/B.'); }catch(e){}
 requestAnimationFrame(loop);
 })();

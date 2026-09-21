@@ -19,7 +19,10 @@ Live: **https://brett.martuni.de/**
 - Taktische Karte, Treffer-Blitz, Screen-Shake, Schadensrauch
 - Sound per WebAudio (Motor + MG/Explosionen), ohne Dateien
 - VGA-Modus: intern 320×200 (Mode 13h), pixelig hochskaliert + Scanlines;
-  per `V` auf 640×400 umschaltbar
+  per `V` auf 640×400 / 960×600 HD umschaltbar (HD mit mehr Details)
+- Treffer-Feedback: Hit-Marker am Visier, Schadensbalken + Blitz am Gegner
+- Leuchtspur für eigene MG-Garben
+- Cheats: `X` = instand setzen, `B` = volle Munition
 - Komplett statisch, keine Cookies, kein Tracking, keine Dependencies
 
 ## Steuerung (Tastatur, deutsche Hilfe auf der Seite per `H`/`F1`)
@@ -35,11 +38,13 @@ Live: **https://brett.martuni.de/**
 | `G` | Fahrwerk ein / aus |
 | `M` | Taktische Karte ein / aus |
 | `C` | Cockpit ein / aus |
-| `V` | VGA-Modus 320×200 ↔ 640×400 |
+| `V` | VGA-Modus 320×200 → 640×400 → 960×600 HD (mehr Details) |
 | `L` | Sound an / aus |
 | `H` oder `F1` | Hilfe ein / aus |
 | `P` / `Esc` | Pause |
 | `N` | Neue Mission |
+| `X` | Cheat: Flugzeug instand setzen (Hülle 100 %) |
+| `B` | Cheat: Volle Munition (500 Schuss) |
 | `R` / `Enter` | Start / Neustart |
 
 ## Projektstruktur
