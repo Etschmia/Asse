@@ -38,3 +38,18 @@ kbd{background:#222;border:1px solid #555;border-bottom-width:3px;padding:1px 6p
 footer{font-size:11px;color:#666;padding:10px;text-align:center;max-width:1000px}
 a{color:#00aaaa}
 @media(max-width:600px){header h1{font-size:15px}}
+/* Fliegerschule */
+#guide{font-size:13px;line-height:1.55;background:#06090c;border:2px solid #ffaa00;padding:12px;margin-top:10px;color:#ccc}
+#guide h2{color:#ffaa00;margin:0 0 6px;font-size:15px}
+#guide .lead{margin:0 0 8px;color:#aaa}
+#guide details{border-top:1px solid #2a2a2a;padding:6px 0}
+#guide summary{cursor:pointer;color:#00ffff;font-weight:bold;list-style:none}
+#guide summary::before{content:"▸ ";color:#ffaa00}
+#guide details[open]>summary::before{content:"▾ "}
+#guide summary:focus-visible{outline:1px dashed #ffaa00}
+#guide table{border-collapse:collapse;width:100%;margin:6px 0}
+#guide td,#guide th{border:1px solid #333;padding:4px 6px;text-align:left;font-size:12px;vertical-align:top}
+#guide th{color:#ffaa00}
+#guide ol,#guide ul{margin:6px 0;padding-left:22px}
+#guide li{margin:3px 0}
+@media(max-width:600px){#guide td,#guide th{font-size:11px;padding:3px}}

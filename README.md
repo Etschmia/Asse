@@ -33,6 +33,8 @@ Live: **https://brett.martuni.de/**
 - Treffer-Feedback: Hit-Marker am Visier, Schadensbalken + Blitz am Gegner
 - Leuchtspur für eigene MG-Garben
 - Cheats: `X` = instand setzen, `B` = volle Munition
+- Fliegerschule auf der Seite: ausführliche Anleitung zu Rudern, Abriss/g-Last,
+  Energie und Gas, Zielen mit Vorhaltepunkt, Waffenwahl, Taktik, Karte, Landen, Instrumenten
 - Komplett statisch, keine Cookies, kein Tracking, keine Dependencies
 
 ## Steuerung (Tastatur, deutsche Hilfe auf der Seite per `H`/`F1`)

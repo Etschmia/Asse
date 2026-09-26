@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Aces über Europa – Browser-Edition (Bf 109) – brett.martuni.de</title>
 <meta name="description" content="Browser-Flugsimulation im Stil der 90er: Bf 109 (Me 109) als Standardflugzeug, VGA 320x200, Tastatursteuerung, deutsche Hilfe.">
-<link rel="stylesheet" href="style.css?v=3.1">
+<link rel="stylesheet" href="style.css?v=3.3">
 </head>
 <body>
 <header>
@@ -65,6 +65,7 @@
     Gegner: Spitfire Mk.V, P-51 Mustang, B-17-Bomber (Welle 2+).<br>
     <b>Ziel:</b> Überlebe über dem Ärmelkanal, schieße Wellen ab, achte auf Geschwindigkeit (Abriss &lt; 180 km/h) und Höhe (Boden = Aus!).
     Freund-Feuer gibt es nicht – alles vor dem Visier ist Feind.</p>
+    <p><b>Ausführliche Anleitung:</b> siehe <a href="#guide">Fliegerschule</a> unterhalb des Spiels.</p>
     <p><b>Fliegen wie eine echte 109:</b> Das Flugzeug fliegt nach Auftrieb, Widerstand, Schub und Gewicht.
     Ziehen erhöht den Anstellwinkel. Zu viel davon, und die Strömung reißt ab: Die Maschine rüttelt, dann kippt sie über eine Fläche weg.
     Anzeige <b>KNÜPPEL α</b> links: Knüppelstellung, Pedale, Trimmung (blaues Dreieck) und Anstellwinkel (gelb = Rüttelgrenze, rot = Abriss).
@@ -80,6 +81,141 @@
     <p style="color:#888">Hinweis: Freie Fan-Hommage an das Spielprinzip von „Aces over Europe" (Dynamix, 1993). Kein Original-Code, keine Original-Grafiken. Alle Sprites/Code hier sind neu und MIT-lizenziert.</p>
   </div>
 
+  <div id="guide">
+    <h2>✈ Fliegerschule – Anleitung, Tipps &amp; Tricks</h2>
+    <p class="lead">Die Bf 109 fliegt hier nach echten Kräften: Auftrieb, Widerstand, Schub und Gewicht. Wer versteht, was die Ruder tun und wie Fahrt und Höhe zusammenhängen, gewinnt den Luftkampf. Klick auf ein Kapitel, um es aufzuklappen.</p>
+
+    <details open>
+      <summary>1. Die ersten 60 Sekunden</summary>
+      <ol>
+        <li><kbd>Enter</kbd> oder Klick ins Bild startet. Du fliegst in 1200 m Höhe mit gut 400 km/h nach Norden (Kurs 000°). Dein Flugplatz liegt 2,5 km direkt voraus.</li>
+        <li>Die Maschine ist für diese Fahrt <b>getrimmt</b>: Lässt du alles los, fliegt sie geradeaus. Probier es aus.</li>
+        <li>Roll mit <kbd>→</kbd> leicht nach rechts (20–30° Querlage), lass los und <b>zieh</b> dann mit <kbd>↓</kbd>: So fliegt man eine Kurve. Nur rollen reicht nicht – dann schiebt die Maschine langsam seitlich und sinkt.</li>
+        <li>Zurück in den Geradeausflug: gegenrollen, bis die Flächen waagerecht sind, Knüppel loslassen.</li>
+        <li><kbd>M</kbd> öffnet die Karte, <kbd>T</kbd> schaltet den nächsten Gegner auf. Dann den gelben Pfeil am Bildrand verfolgen.</li>
+      </ol>
+    </details>
+
+    <details>
+      <summary>2. Was die Ruder tun</summary>
+      <table>
+        <tr><th>Ruder</th><th>Tasten / Maus</th><th>Wirkung</th><th>Worauf achten</th></tr>
+        <tr><td><b>Querruder</b></td><td><kbd>←</kbd> <kbd>→</kbd> / Maus seitlich</td><td>Rollen um die Längsachse. Die Maschine behält die Querlage, wenn du loslässt.</td><td>Die Rollrate wächst mit der Fahrt bis ~400 km/h, darüber werden die Querruder schwer. Im Abriss wirken sie kaum.</td></tr>
+        <tr><td><b>Höhenruder</b></td><td><kbd>↓</kbd> ziehen / <kbd>↑</kbd> drücken / Maus unter bzw. über dem Visier</td><td>Verändert den <b>Anstellwinkel</b>. Mehr Anstellwinkel = mehr Auftrieb = die Flugbahn krümmt sich. In Querlage wird daraus die Kurve.</td><td>Zu viel Anstellwinkel lässt die Strömung abreißen. Bei hoher Fahrt begrenzen die Steuerkräfte auf ~7,5 g.</td></tr>
+        <tr><td><b>Seitenruder</b></td><td><kbd>A</kbd> / <kbd>D</kbd></td><td>Dreht die Nase seitlich (Gieren), die Maschine schiebt. Durch die V-Stellung der Flächen rollt sie dabei leicht mit.</td><td>Ideal für <b>kleine Zielkorrekturen</b> von 1–3°, ohne die Querlage zu ändern. Zum Kurvenfliegen ungeeignet – Schieben kostet Fahrt.</td></tr>
+        <tr><td><b>Trimmung</b></td><td><kbd>Q</kbd> kopflastig / <kbd>E</kbd> schwanzlastig</td><td>Verschiebt die Neutralstellung des Höhenruders. Bestimmt, bei welcher Fahrt die Maschine freihändig geradeaus fliegt.</td><td>Steigt die Maschine freihändig, ist sie zu schwanzlastig → <kbd>Q</kbd>. Sinkt sie, → <kbd>E</kbd>. Blaues Dreieck in der Anzeige KNÜPPEL.</td></tr>
+        <tr><td><b>Gas</b></td><td><kbd>W</kbd>/<kbd>S</kbd>, <kbd>+</kbd>/<kbd>-</kbd>, Mausrad</td><td>Leistung des DB 605. Volle Leistung bis ~5700 m, darüber nimmt sie mit der dünnen Luft ab.</td><td>Siehe Kapitel 4.</td></tr>
+        <tr><td><b>Klappen / Fahrwerk</b></td><td><kbd>F</kbd> / <kbd>G</kbd></td><td>Klappen: mehr Auftrieb bei wenig Fahrt, aber mehr Widerstand. Fahrwerk: nur Widerstand.</td><td>Nur zum Landen. Im Luftkampf eingefahren lassen!</td></tr>
+      </table>
+      <p><b>Tastatur oder Maus?</b> Tasten fahren den Ausschlag weich an: kurz tippen = kleiner Ausschlag, halten = voller. Die Maus steuert direkt über die Zeigerposition – das Visier ist die Mitte, je weiter weg, desto stärker. Um die Mitte ist die Wirkung feiner (Expo-Kennlinie), das hilft beim Zielen. Maus aus dem Bild = Pause.</p>
+    </details>
+
+    <details>
+      <summary>3. Anstellwinkel, Abriss und g-Last</summary>
+      <p>Links unten zeigt die Anzeige <b>KNÜPPEL α</b>: das Kreuz mit der Knüppelstellung, den Balken mit den Pedalen, das blaue Dreieck mit der Trimmung und rechts den senkrechten <b>α-Balken</b> (Anstellwinkel bis zum Abriss).</p>
+      <ul>
+        <li><b style="color:#7ee07e">Grün:</b> Alles gut, die Strömung liegt an.</li>
+        <li><b style="color:#ffd040">Gelb (ab ~85 %):</b> Die Maschine <b>rüttelt</b>. Das ist die Grenze der engsten Kurve. Hier kurvt die 109 am besten, aber nicht darüber hinaus.</li>
+        <li><b style="color:#ff5040">Rot:</b> <b>Strömungsabriss.</b> Die Maschine verliert Auftrieb, kippt über eine Fläche weg und kann ins Trudeln geraten.</li>
+      </ul>
+      <p><b>Abriss beenden:</b> Knüppel loslassen oder leicht drücken, Gas rein und warten, bis der α-Balken grün ist. Dann behutsam abfangen. Nicht dagegen ziehen – das vertieft den Abriss. Im Abriss wirken die Querruder kaum; wenn überhaupt, mit dem Seitenruder gegen die Drehrichtung steuern.</p>
+      <p><b>Wann droht der Abriss?</b> Bei wenig Fahrt, also nach steilem Steigen, oben im Looping oder beim Landen. Bei wenig Fahrt reicht schon halber Knüppel. Auch ein ruckartiges Ziehen schießt kurz über die Grenze. Mit ausgefahrenen Klappen liegt die Grenze etwas früher.</p>
+      <p><b>g-Last:</b> Oben links in der Statuszeile steht das Lastvielfache (z. B. „4.2 g“). Ab ~5 g wird es grau und dann schwarz vor Augen. Bei negativer Last (kräftig drücken) wird es rot. Über 10 g oder unter −5 g wird die Zelle beschädigt. Übergeschwindigkeit ab ~760 km/h angezeigter Fahrt ebenso. Im Sturzflug also rechtzeitig Gas raus und sanft abfangen.</p>
+    </details>
+
+    <details>
+      <summary>4. Gas geben, Gas drosseln – Energie ist Leben</summary>
+      <p>Fahrt und Höhe sind zusammen deine <b>Energie</b>. Du kannst sie ineinander umwandeln: steigen kostet Fahrt, stürzen bringt Fahrt. Jede enge Kurve verbraucht Energie durch Widerstand. Wer mehr Energie hat, bestimmt den Kampf.</p>
+      <table>
+        <tr><th>Situation</th><th>Gas</th><th>Warum</th></tr>
+        <tr><td>Anflug, Suche, Steigen</td><td>70–100 %</td><td>Höhe sammeln. Höhe ist gespeicherte Fahrt.</td></tr>
+        <tr><td>Luftkampf, Kurvenkampf</td><td><b>100 %</b></td><td>Enge Kurven fressen Fahrt. Ohne Vollgas wird die 109 schnell langsam und reißt ab.</td></tr>
+        <tr><td>Sturzangriff aus der Höhe</td><td>anfangs voll, ab ~650 km/h zurücknehmen</td><td>Nicht über ~720 km/h kommen, sonst Strukturschaden. Mit Überschuss-Fahrt nach dem Angriff wieder steigen.</td></tr>
+        <tr><td>Hinter einem langsameren Gegner</td><td>kurz drosseln</td><td>Nicht an ihm vorbeischießen. Wer überholt, wird zum Gejagten.</td></tr>
+        <tr><td>Oben im Looping / steiles Steigen</td><td>voll</td><td>Die Fahrt fällt schnell, sonst droht der Abriss.</td></tr>
+        <tr><td>Landeanflug</td><td>20–30 %, zum Aufsetzen 0 %</td><td>Fahrt abbauen. Am Boden bremst die Maschine im Leerlauf (unter 15 % Gas) deutlich stärker.</td></tr>
+      </table>
+      <p>Die Instrumente <b>U/min</b> und <b>ata</b> (Ladedruck) zeigen die Leistungsstellung. Über ~5700 m fällt die Leistung ab – dort oben ist man schnell, reagiert aber träger, weil die Ruder in dünner Luft weniger wirken.</p>
+    </details>
+
+    <details>
+      <summary>5. Richtig zielen – Vorhalt, Waffen, Entfernung</summary>
+      <p><b>Ja, es gibt einen Vorhaltepunkt:</b> Ist ein aufgeschaltetes Ziel näher als 800 m, erscheint neben ihm ein kleiner gelber <b>Kreis mit Punkt</b>. Das ist der Punkt, auf den du dein <b>Revi-Visier</b> (orangefarbener Kreis in der Bildmitte) legen musst, damit die Garbe das Ziel trifft. Er berücksichtigt die Flugrichtung und Fahrt des Gegners, deine eigene Fahrt und den Geschossabfall der gewählten Waffe. Den Vorhaltepunkt gibt es nur in der Cockpitsicht.</p>
+      <ol>
+        <li>Ziel mit <kbd>T</kbd> aufschalten. <kbd>T</kbd> schaltet der Reihe nach vom nächsten zum ferneren Gegner. Die gelbe Eckklammer zeigt Typ, Entfernung und Zustandsbalken.</li>
+        <li>Hinter den Gegner setzen und die Entfernung auf <b>unter 400 m</b> verkürzen – 200–300 m ist ideal. Auf 800 m und mehr treffen nur Glückstreffer.</li>
+        <li>In seine Kurvenebene rollen und so weit ziehen, dass das Visier <b>vor</b> dem Gegner auf dem Vorhaltepunkt liegt. Feinkorrekturen mit dem Seitenruder <kbd>A</kbd>/<kbd>D</kbd>.</li>
+        <li><b>Kurze Feuerstöße</b> von ½–1 Sekunde. Die Leuchtspur zeigt, wohin die Garbe geht: Liegt sie hinter dem Ziel, mehr vorhalten.</li>
+        <li>Ein Treffer wird mit gelbem Blitz am Visier, weißem Aufblitzen des Gegners und einem hellen Ton bestätigt, ein Abschuss mit rotem X und „ABSCHUSS!“.</li>
+      </ol>
+      <table>
+        <tr><th>Waffe (Taste)</th><th>Munition</th><th>Wirkung</th><th>Ballistik</th><th>Wann</th></tr>
+        <tr><td><b>MG 131</b> (<kbd>1</kbd>)</td><td>2× 300</td><td>Spitfire: 4 Treffer, Mustang: 5, B-17: 20</td><td>schnell, flach, 24 Schuss/s</td><td>Jäger, schnelle Ziele, größere Entfernung</td></tr>
+        <tr><td><b>MG 151/20</b> (<kbd>2</kbd>, rechte Maustaste)</td><td>200</td><td>Spitfire: 2 Treffer, Mustang: 2, B-17: 6</td><td>langsamer, fällt stärker ab, 10 Schuss/s</td><td><b>B-17</b> und nahe Ziele – mehr vorhalten und höher zielen</td></tr>
+        <tr><td><b>Beide</b> (<kbd>3</kbd>)</td><td colspan="2">maximale Feuerkraft</td><td>zwei Flugbahnen</td><td>kurze, nahe Gelegenheiten</td></tr>
+      </table>
+      <p>Jeder Abschuss bringt 40 MG- und 10 Kanonenschuss zurück. Leere Waffe? Mit <kbd>1</kbd>/<kbd>2</kbd> umschalten oder landen und aufmunitionieren.</p>
+    </details>
+
+    <details>
+      <summary>6. Taktik – wie man sich verhält</summary>
+      <ul>
+        <li><b>Frontal-Anflüge meiden.</b> Spitfires und Mustangs schießen, wenn du vor ihrer Nase bist (etwa ±15°, unter 900 m). Frontal treffen beide – das kostet dich Zelle. Besser seitlich ausweichen und von hinten kommen.</li>
+        <li><b>Das Abdrehen ausnutzen:</b> Kommt ein Jäger näher als ~170 m, bricht er den Angriff ab und dreht 2,5–4,5 s lang weg. Genau dann in seine Kurve rollen, ziehen und von hinten feuern.</li>
+        <li><b>Nicht rammen:</b> Unter ~22 m Abstand gibt es eine Kollision. Das kostet 35 % Zelle.</li>
+        <li><b>Überhöhung:</b> Wer höher ist, kann im Sturz Fahrt aufnehmen, angreifen und wieder steigen. Das ist der klassische Angriff der 109. Langes Kurbeln auf gleicher Höhe verbraucht Energie.</li>
+        <li><b>B-17 (ab Welle 2):</b> fliegt in 1800–2500 m stur Kurs auf deinen Flugplatz. Ihre Bordschützen schießen <b>rundum</b> bis ~750 m. Schnell anfliegen, mit der Kanone aus 300–400 m kurze Stöße, dann wegtauchen, Abstand gewinnen und wiederholen. Nicht lange hinter ihr kleben. Sie hält viel aus (20 MG- oder 6 Kanonentreffer), bringt aber 400 Punkte.</li>
+        <li><b>Welle 2 und 3:</b> Zuerst den Jagdschutz abschießen, dann in Ruhe die B-17 angreifen.</li>
+        <li><b>Beschädigt?</b> Ab 45 % Zelle raucht deine Maschine. Unter 30 % wird es kritisch: raus aus dem Kampf, zum Flugplatz, landen – am Boden wird repariert.</li>
+        <li><b>Flak:</b> Die schwarzen Wölkchen sind Flak-Sprengpunkte. Vier Batterien stehen an der Küste. Sie feuern nur, wenn du <b>tiefer als 3500 m</b> und <b>näher als 4 km</b> bist. Darüber fliegen oder Abstand halten – die Karte zeigt, wo sie stehen.</li>
+        <li><b>Außenansicht</b> (<kbd>K</kbd>) hilft beim Orientieren und bei Kunstflug. Zum Zielen zurück ins Cockpit – nur dort gibt es Visier und Vorhaltepunkt.</li>
+      </ul>
+      <p><b>Punkte:</b> Spitfire 100, Mustang 150, B-17 400, dazu je Welle ein Bonus von 100 + 50 × Wellennummer.</p>
+    </details>
+
+    <details>
+      <summary>7. Die Karte richtig einsetzen</summary>
+      <p><kbd>M</kbd> blendet die taktische Karte oben rechts ein. <b>Norden ist oben</b>, deine Maschine ist immer in der Mitte, der Ausschnitt reicht etwa 9 km in jede Richtung.</p>
+      <table>
+        <tr><th>Symbol</th><th>Bedeutung</th></tr>
+        <tr><td><span style="color:#60ff70">▲ grüner Pfeil</span></td><td>Du, die Spitze zeigt deinen Kurs</td></tr>
+        <tr><td><span style="color:#fff">■ weißes Quadrat</span></td><td>Eigener Flugplatz (Landebahn Nord–Süd)</td></tr>
+        <tr><td><span style="color:#ff4040">■ rot</span></td><td>Feindlicher Jäger (Spitfire / Mustang)</td></tr>
+        <tr><td><span style="color:#ff60ff">■ magenta</span></td><td>B-17-Bomber</td></tr>
+        <tr><td><span style="color:#ffc450">○ gelber Ring</span></td><td>Aufgeschaltetes Ziel (<kbd>T</kbd>)</td></tr>
+        <tr><td><span style="color:#c07030">■ orange</span></td><td>Flak-Stellung – Radius 4 km unter 3500 m meiden</td></tr>
+        <tr><td><span style="color:#5a9ac8">blaue Fläche</span></td><td>Ärmelkanal (im Norden). Dort kann man nicht landen!</td></tr>
+      </table>
+      <p><b>So nutzt du sie:</b> Vor dem Angriff einen Blick darauf werfen: Wo sind die Gegner, wo ist die B-17, liegt eine Flak-Stellung auf dem Weg? Dann einen Kurs wählen, der dich <b>seitlich oder von hinten</b> an den Pulk heranführt. Den Kompass lesen: Kurs 000° = Nord, 090° = Ost, 180° = Süd, 270° = West. Und für den Heimweg: in die Richtung des weißen Quadrats drehen.</p>
+    </details>
+
+    <details>
+      <summary>8. Landen und Aufmunitionieren</summary>
+      <ol>
+        <li>Mit der Karte den Flugplatz ansteuern. Am besten von Süden anfliegen (Kurs 000°), dann liegt die helle Graspiste genau vor dir.</li>
+        <li>Etwa 3 km vorher auf ~300 m sinken, Gas auf 20–30 %, <b>Fahrwerk</b> <kbd>G</kbd> (grüne Lampe FW) und unter 300 km/h <b>Klappen</b> <kbd>F</kbd> (Lampe KL).</li>
+        <li>Mit ~200 km/h flach anschweben, die Nase leicht über dem Horizont. Der Variometer (m/s) sollte beim Aufsetzen <b>weniger als −5</b> zeigen, also sanft sinken.</li>
+        <li>Aufsetzen mit <b>unter 280 km/h</b>, Flächen fast waagerecht, Nase nicht nach unten. Dann Gas auf 0 – die Maschine bremst.</li>
+        <li>Unter ~50 km/h wird aufmunitioniert und repariert („Am Boden …“). Danach Vollgas, ab ~190 km/h sanft ziehen und abheben. Fahrwerk und Klappen wieder einfahren!</li>
+      </ol>
+      <p>Ohne Fahrwerk, zu schnell, zu steil oder im Wasser endet die Landung als Absturz. Notfalls helfen die Cheats <kbd>X</kbd> (Reparatur) und <kbd>B</kbd> (Munition).</p>
+    </details>
+
+    <details>
+      <summary>9. Die Instrumente im Cockpit</summary>
+      <table>
+        <tr><th>Instrument</th><th>Zeigt</th></tr>
+        <tr><td>km/h (Fahrtmesser)</td><td><b>Angezeigte Fahrt</b>. Sie bestimmt Auftrieb und Ruderwirkung. In großer Höhe ist die wahre Fahrt deutlich höher.</td></tr>
+        <tr><td>Höhe</td><td>Langer Zeiger: eine Umdrehung = 1000 m. Kurzer Zeiger: eine Umdrehung = 10 000 m. Der Wert steht darunter.</td></tr>
+        <tr><td>m/s (Variometer)</td><td>Steigen (+) oder Sinken (−) in Metern pro Sekunde</td></tr>
+        <tr><td>Kompass</td><td>Kurs in Grad. Das gelbe Dreieck oben ist die Steuerstrichmarke, N ist rot.</td></tr>
+        <tr><td>U/min und ata</td><td>Drehzahl und Ladedruck – folgen der Gasstellung</td></tr>
+        <tr><td>ZELLE / MG / KAN</td><td>Zustand der Zelle und der Munitionsvorrat. Die gewählte Waffe hat die kräftigere Farbe.</td></tr>
+        <tr><td>FW / KL</td><td>Lampen für Fahrwerk und Landeklappen (grün = ausgefahren)</td></tr>
+      </table>
+      <p>Warnungen blinken rot unter der Statuszeile: <b>ABRISS</b>, <b>ÜBERLAST</b>, <b>ÜBERGESCHWINDIGKEIT</b>, <b>BODENNÄHE</b>.</p>
+    </details>
+  </div>
   <div id="mission" style="font-size:13px;margin-top:10px;background:#101418;border:1px solid #333;padding:10px">
     <b style="color:#ffaa00">Einsatzbefehl – Kanalfront, 1944:</b>
     Starte mit deiner Bf 109 vom Feldflugplatz. Erste Welle: 3 Spitfires. Danach Bomber + Begleitschutz.
@@ -90,6 +226,6 @@
 <footer>
   brett.martuni.de &bull; Bf 109 Browser-Sim v3.1 (Flugmodell, Maus, MG 151/20) &bull; Steuerung: nur Tastatur nötig &bull; Datei: index.html + game.js, keine Cookies, kein Tracking
 </footer>
-<script src="game.js?v=3.2"></script>
+<script src="game.js?v=3.3"></script>
 </body>
 </html>
