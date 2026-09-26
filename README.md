@@ -16,10 +16,16 @@ Live: **https://brett.martuni.de/**
 - Gegner-KI in Wellen: Spitfire Mk.V, P-51 Mustang, B-17-Bomber (ab Welle 2)
 - Flak, Wolken, Dörfer/Wälder, Flugplatz mit Notlandung + Aufmunitionierung
 - Cockpit mit Instrumenten (Fahrt, Höhe, Kurs, Gas, Hülle, Munition)
-- Taktische Karte, Treffer-Blitz, Screen-Shake, Schadensrauch
+- Taktische Karte (Norden oben, mit Küste und Flak), Treffer-Blitz, Schadensrauch, Flak als schwarze Sprengwolken
 - Sound per WebAudio (Motor + MG/Explosionen), ohne Dateien
-- VGA-Modus: intern 320×200 (Mode 13h), pixelig hochskaliert + Scanlines;
-  per `V` auf 640×400 / 960×600 HD umschaltbar (HD mit mehr Details)
+- Echte 3D-Kamera mit flach schattierten Polygonmodellen (Spitfire Mk.V,
+  P-51D, B-17G, Bf 109 G-6) inkl. Tarnanstrich und Hoheitszeichen
+- Landschaft als Feld-Flickenteppich mit Hecken, Dörfern, Wäldern, Küste,
+  Ärmelkanal und Dunst; weiche Wolken (Durchflug = Sichtverlust)
+- Zielanzeige (`T`) mit Entfernung, Zustandsbalken, Vorhaltepunkt und Randpfeil
+- Außenansicht (`K`); abgeschossene Gegner stürzen brennend ab
+- Logik intern 320×200 (Mode 13h), gerendert bis 1280×800; `V` schaltet um,
+  320×200 = klassischer Look mit Scanlines und reduzierter Palette
 - Treffer-Feedback: Hit-Marker am Visier, Schadensbalken + Blitz am Gegner
 - Leuchtspur für eigene MG-Garben
 - Cheats: `X` = instand setzen, `B` = volle Munition
@@ -38,7 +44,9 @@ Live: **https://brett.martuni.de/**
 | `G` | Fahrwerk ein / aus |
 | `M` | Taktische Karte ein / aus |
 | `C` | Cockpit ein / aus |
-| `V` | VGA-Modus 320×200 → 640×400 → 960×600 HD (mehr Details) |
+| `T` | Nächstes Ziel aufschalten (Klammer, Entfernung, Vorhaltepunkt) |
+| `K` | Außenansicht / Cockpitsicht |
+| `V` | Auflösung 320×200 (klassisch) → 640×400 → 960×600 → 1280×800 |
 | `L` | Sound an / aus |
 | `H` oder `F1` | Hilfe ein / aus |
 | `P` / `Esc` | Pause |

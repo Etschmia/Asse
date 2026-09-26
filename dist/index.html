@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Aces über Europa – Browser-Edition (Bf 109) – brett.martuni.de</title>
 <meta name="description" content="Browser-Flugsimulation im Stil der 90er: Bf 109 (Me 109) als Standardflugzeug, VGA 320x200, Tastatursteuerung, deutsche Hilfe.">
-<link rel="stylesheet" href="style.css?v=2.2">
+<link rel="stylesheet" href="style.css?v=3.0">
 </head>
 <body>
 <header>
   <h1>★ Aces über Europa <span style="color:#888">/ Browser-Edition</span></h1>
-  <span class="sub">VGA 320×200 &bull; Tastatur &bull; Standard: Bf 109 G-6 &bull; Fan-Hommage, kein Original-Remake</span>
+  <span class="sub">3D-Polygongrafik bis 1280×800 &bull; Tastatur &bull; Standard: Bf 109 G-6 &bull; Fan-Hommage, kein Original-Remake</span>
 </header>
 <div id="wrap">
   <div id="screen-bezel">
@@ -22,7 +22,8 @@
       <button id="btnHelp">? Hilfe (H)</button>
       <button id="btnPause">⏸ Pause (P)</button>
       <button id="btnNew">↻ Neue Mission (N)</button>
-      <button id="btnVga">VGA: 320×200 (V)</button>
+      <button id="btnVga">VGA: 960×600 (V)</button>
+      <button id="btnView">Ansicht: Cockpit (K)</button>
       <button id="btnRepair">✚ Reparatur (X)</button>
       <button id="btnAmmo">▤ Munition (B)</button>
       <button id="btnSound">Sound: an (L)</button>
@@ -44,7 +45,9 @@
       <tr><td><kbd>G</kbd></td><td>Fahrwerk ein / aus</td><td>Nur für Optik + Bremswirkung</td></tr>
       <tr><td><kbd>M</kbd></td><td>Taktische Karte ein / aus</td><td>Radar-Übersicht Kanal</td></tr>
       <tr><td><kbd>C</kbd></td><td>Cockpit ein / aus</td><td>Mehr Sicht ohne Cockpit</td></tr>
-      <tr><td><kbd>V</kbd></td><td>VGA-Modus: 320×200 → 640×400 → 960×600 HD</td><td>Weiterschalten; HD zeigt mehr Details</td></tr>
+      <tr><td><kbd>T</kbd></td><td>Nächstes Ziel aufschalten</td><td>Gelbe Klammer = Ziel, Kreis = Vorhaltepunkt</td></tr>
+      <tr><td><kbd>K</kbd></td><td>Außenansicht / Cockpitsicht</td><td>Verfolgerkamera hinter der eigenen Bf 109</td></tr>
+      <tr><td><kbd>V</kbd></td><td>Auflösung: 320×200 → 640×400 → 960×600 → 1280×800</td><td>320×200 = klassisch mit Scanlines</td></tr>
       <tr><td><kbd>L</kbd></td><td>Sound an / aus</td><td>Motor + MG per WebAudio</td></tr>
       <tr><td><kbd>H</kbd> oder <kbd>F1</kbd></td><td>Diese Hilfe ein / aus</td><td>Pause bleibt aktiv</td></tr>
       <tr><td><kbd>P</kbd> / <kbd>Esc</kbd></td><td>Pause</td><td>—</td></tr>
@@ -58,7 +61,13 @@
     Gegner: Spitfire Mk.V, P-51 Mustang, B-17-Bomber (Welle 2+).<br>
     <b>Ziel:</b> Überlebe über dem Ärmelkanal, schieße Wellen ab, achte auf Geschwindigkeit (Abriss &lt; 180 km/h) und Höhe (Boden = Aus!).
     Freund-Feuer gibt es nicht – alles vor dem Visier ist Feind.</p>
-    <p><b>VGA-Auflösung:</b> Intern wird in 320×200 gerechnet (Original-VGA Mode 13h, 256 Farben) und per Canvas-Backing-Store scharf hochskaliert. Mit <kbd>V</kbd> durchschalten: 320×200 → 640×400 → 960×600 HD. HD zeigt zusätzlich feinere Himmelsstufen, Feldwege, Dorf-/Wald-Details, größere Gegnersilhouetten mit Schadensbalken und längere Sichtweite. Treffer werden mit gelbem X am Visier, Schadensbalken und Blitz am Gegner bestätigt; eigene MG-Garben haben Leuchtspur.</p>
+    <p><b>Was ist was am Himmel?</b>
+    <b style="color:#ffc450">Gelbe Eckklammer</b> = aufgeschaltetes Ziel (Typ, Entfernung, Zustandsbalken) – <kbd>T</kbd> wechselt.
+    <b style="color:#ffc450">Gelber Pfeil am Rand</b> = Richtung zum Ziel, wenn es außer Sicht ist.
+    <b style="color:#ffc450">Kleiner Kreis</b> = Vorhaltepunkt: Visier dorthin legen, dann trifft die Garbe.
+    <b>Schwarze Wölkchen</b> = Flak-Sprengpunkte. <b>Orange Striche</b> = eigene Leuchtspur, <b>rötliche</b> = feindlicher Beschuss.
+    Getroffene Gegner ziehen Rauch, abgeschossene stürzen brennend ab.</p>
+    <p><b>Auflösung:</b> Die Spiellogik rechnet in 320×200 (VGA Mode 13h), gezeichnet wird mit echten 3D-Polygonen in bis zu 1280×800. Beim Start wird die passende Stufe für den Bildschirm gewählt; <kbd>V</kbd> schaltet weiter, 320×200 zeigt den klassischen Look mit Scanlines und reduzierter Palette.</p>
     <p style="color:#888">Hinweis: Freie Fan-Hommage an das Spielprinzip von „Aces over Europe" (Dynamix, 1993). Kein Original-Code, keine Original-Grafiken. Alle Sprites/Code hier sind neu und MIT-lizenziert.</p>
   </div>
 
@@ -70,8 +79,8 @@
   </div>
 </div>
 <footer>
-  brett.martuni.de &bull; Bf 109 Browser-Sim v2.3 (HD+Tracer+Cheats) &bull; Steuerung: nur Tastatur nötig &bull; Datei: index.html + game.js, keine Cookies, kein Tracking
+  brett.martuni.de &bull; Bf 109 Browser-Sim v3.0 (3D-Polygone, Zielanzeige, Außenansicht) &bull; Steuerung: nur Tastatur nötig &bull; Datei: index.html + game.js, keine Cookies, kein Tracking
 </footer>
-<script src="game.js?v=2.3"></script>
+<script src="game.js?v=3.0"></script>
 </body>
 </html>
