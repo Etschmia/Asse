@@ -12,7 +12,11 @@ Live: **https://brett.martuni.de/**
 
 ## Features
 
-- Arcade-Flugmodell (Gas, Abriss < 180 km/h, Strukturschaden > 660 km/h)
+- Flugmodell mit Kräften: Auftrieb über Anstellwinkel, Luftdichte nach Höhe,
+  DB-605-Leistung mit Volldruckhöhe, Ruderwirkung über Staudruck, Abriss mit
+  Abkippen, g-Begrenzung durch Steuerkräfte, Grau-/Rotsehen, Trimmung
+- Maussteuerung (Pointer-Lock) zusätzlich zur Tastatur
+- Waffenwahl: 2× MG 131, MG 151/20 oder beide
 - Gegner-KI in Wellen: Spitfire Mk.V, P-51 Mustang, B-17-Bomber (ab Welle 2)
 - Flak, Wolken, Dörfer/Wälder, Flugplatz mit Notlandung + Aufmunitionierung
 - Cockpit mit Instrumenten (Fahrt, Höhe, Kurs, Gas, Hülle, Munition)
@@ -35,11 +39,15 @@ Live: **https://brett.martuni.de/**
 
 | Taste | Wirkung |
 |---|---|
-| `←` / `→` | Querruder: rollen + Kurve |
+| `←` / `→` | Querruder: rollen (Rollrate abhängig von der Fahrt) |
 | `↑` / `↓` | Höhenruder: drücken / ziehen (wie Steuerknüppel) |
-| `A` / `D` | Seitenruder links / rechts |
+| `Q` / `E` | Höhentrimmung kopflastig / schwanzlastig |
+| `Pos1` | Maus-Knüppel mittig |
+| `A` / `D` | Seitenruder links / rechts (Gieren, Schieben) |
 | `W` / `S` oder `+` / `-` | Gas mehr / weniger |
-| `Leertaste` | Feuern (2× MG 131 + MG 151/20) |
+| `Leertaste` | Feuern mit gewählter Waffe |
+| `1` / `2` / `3` | Waffe: MG 131 / MG 151/20 / beide |
+| Maus | Klick ins Bild = Maussteuerung: Bewegung = Knüppel, links = Feuer, rechts = Kanone, Rad = Gas, `Esc` = freigeben |
 | `F` | Landeklappen umschalten |
 | `G` | Fahrwerk ein / aus |
 | `M` | Taktische Karte ein / aus |

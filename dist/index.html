@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Aces über Europa – Browser-Edition (Bf 109) – brett.martuni.de</title>
 <meta name="description" content="Browser-Flugsimulation im Stil der 90er: Bf 109 (Me 109) als Standardflugzeug, VGA 320x200, Tastatursteuerung, deutsche Hilfe.">
-<link rel="stylesheet" href="style.css?v=3.0">
+<link rel="stylesheet" href="style.css?v=3.1">
 </head>
 <body>
 <header>
@@ -24,6 +24,7 @@
       <button id="btnNew">↻ Neue Mission (N)</button>
       <button id="btnVga">VGA: 960×600 (V)</button>
       <button id="btnView">Ansicht: Cockpit (K)</button>
+      <button id="btnWeapon">Waffe: MG 131 (1/2/3)</button>
       <button id="btnRepair">✚ Reparatur (X)</button>
       <button id="btnAmmo">▤ Munition (B)</button>
       <button id="btnSound">Sound: an (L)</button>
@@ -36,11 +37,15 @@
     <h2>⌨️ Deutsche Hilfe – Tastatursteuerung</h2>
     <table>
       <tr><th>Taste</th><th>Wirkung</th><th>Bemerkung im Stil 1993</th></tr>
-      <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Querruder: rollen + Kurve</td><td>Mit <kbd>↓</kbd> in die Kurve ziehen</td></tr>
-      <tr><td><kbd>↑</kbd> / <kbd>↓</kbd></td><td>Höhenruder: Nase runter / hoch</td><td>↑ = drücken, ↓ = ziehen (wie Steuerknüppel)</td></tr>
-      <tr><td><kbd>A</kbd> / <kbd>D</kbd></td><td>Seitenruder links / rechts</td><td>Feinkorrektur beim Zielen</td></tr>
-      <tr><td><kbd>W</kbd> / <kbd>S</kbd> oder <kbd>+</kbd> / <kbd>-</kbd></td><td>Gas mehr / weniger</td><td>Motor: DB 605, 0–100 %</td></tr>
-      <tr><td><kbd>Leertaste</kbd></td><td>Feuern: 2× MG 131 + MG 151/20</td><td>Kurze Feuerstöße! Munition: 500</td></tr>
+      <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Querruder: rollen</td><td>Rollrate steigt mit der Fahrt, über ~400 km/h werden die Querruder schwer</td></tr>
+      <tr><td><kbd>↑</kbd> / <kbd>↓</kbd></td><td>Höhenruder: drücken / ziehen</td><td>Kurve = rollen + ziehen. Wirkung hängt von Fahrt, Höhe und Anstellwinkel ab</td></tr>
+      <tr><td><kbd>A</kbd> / <kbd>D</kbd></td><td>Seitenruder links / rechts</td><td>Gieren + Schieben; Schieben rollt die Maschine mit (V-Stellung)</td></tr>
+      <tr><td><kbd>Q</kbd> / <kbd>E</kbd></td><td>Höhentrimmung kopflastig / schwanzlastig</td><td>Trimmung legt fest, bei welcher Fahrt die Maschine freihändig geradeaus fliegt</td></tr>
+      <tr><td><kbd>Pos1</kbd></td><td>Knüppel mittig</td><td>Setzt den Maus-Knüppel zurück (auch Maus-Mitteltaste)</td></tr>
+      <tr><td><kbd>W</kbd> / <kbd>S</kbd> oder <kbd>+</kbd> / <kbd>-</kbd></td><td>Gas mehr / weniger</td><td>DB 605: volle Leistung bis ~5700 m, darüber nimmt sie ab. Auch per Mausrad</td></tr>
+      <tr><td><kbd>Leertaste</kbd></td><td>Feuern mit gewählter Waffe</td><td>Kurze Feuerstöße! Auch linke Maustaste</td></tr>
+      <tr><td><kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd></td><td>Waffenwahl: MG 131 / MG 151/20 / beide</td><td>MG: 2× 300 Schuss, flach. Kanone: 200 Schuss, 3× Wirkung, stärkerer Geschossabfall. Rechte Maustaste = Kanone</td></tr>
+      <tr><td>Maus</td><td>Klick ins Bild: Maussteuerung</td><td>Bewegen = Steuerknüppel (zu sich ziehen = Nase hoch), Rad = Gas, <kbd>Esc</kbd> gibt die Maus frei (Pause)</td></tr>
       <tr><td><kbd>F</kbd></td><td>Landeklappen umschalten</td><td>Langsam &lt; 300 km/h empfohlen</td></tr>
       <tr><td><kbd>G</kbd></td><td>Fahrwerk ein / aus</td><td>Nur für Optik + Bremswirkung</td></tr>
       <tr><td><kbd>M</kbd></td><td>Taktische Karte ein / aus</td><td>Radar-Übersicht Kanal</td></tr>
@@ -61,6 +66,11 @@
     Gegner: Spitfire Mk.V, P-51 Mustang, B-17-Bomber (Welle 2+).<br>
     <b>Ziel:</b> Überlebe über dem Ärmelkanal, schieße Wellen ab, achte auf Geschwindigkeit (Abriss &lt; 180 km/h) und Höhe (Boden = Aus!).
     Freund-Feuer gibt es nicht – alles vor dem Visier ist Feind.</p>
+    <p><b>Fliegen wie eine echte 109:</b> Das Flugzeug fliegt nach Auftrieb, Widerstand, Schub und Gewicht.
+    Ziehen erhöht den Anstellwinkel. Zu viel davon, und die Strömung reißt ab: Die Maschine rüttelt, dann kippt sie über eine Fläche weg.
+    Anzeige <b>KNÜPPEL α</b> links: Knüppelstellung, Pedale, Trimmung (blaues Dreieck) und Anstellwinkel (gelb = Rüttelgrenze, rot = Abriss).
+    Bei hoher Fahrt begrenzen die Steuerkräfte die Last auf ~7,5 g. Über ~5 g wird es grau/schwarz vor Augen, bei negativer Last rot.
+    Hohe Fahrt und Last-Spitzen beschädigen die Zelle. <b>Landen:</b> Fahrwerk (<kbd>G</kbd>), Klappen (<kbd>F</kbd>), unter 280 km/h, sanft (&lt; 5 m/s sinken), Flächen waagerecht, Gas raus bremst. Am Boden wird nachmunitioniert und repariert.</p>
     <p><b>Was ist was am Himmel?</b>
     <b style="color:#ffc450">Gelbe Eckklammer</b> = aufgeschaltetes Ziel (Typ, Entfernung, Zustandsbalken) – <kbd>T</kbd> wechselt.
     <b style="color:#ffc450">Gelber Pfeil am Rand</b> = Richtung zum Ziel, wenn es außer Sicht ist.
@@ -74,13 +84,13 @@
   <div id="mission" style="font-size:13px;margin-top:10px;background:#101418;border:1px solid #333;padding:10px">
     <b style="color:#ffaa00">Einsatzbefehl – Kanalfront, 1944:</b>
     Starte mit deiner Bf 109 vom Feldflugplatz. Erste Welle: 3 Spitfires. Danach Bomber + Begleitschutz.
-    Munition ist begrenzt, der Motor überhitzt bei Vollgas auf Dauer nicht – aber Vorsicht bei Sturzflug &gt; 650 km/h (Struktur!).
+    Munition ist begrenzt (MG 131 und MG 151/20 wählbar) – Vorsicht bei Sturzflug über 750 km/h und bei harten Abfangbögen (Struktur!).
     Viel Erfolg, Kamerad!
   </div>
 </div>
 <footer>
-  brett.martuni.de &bull; Bf 109 Browser-Sim v3.0 (3D-Polygone, Zielanzeige, Außenansicht) &bull; Steuerung: nur Tastatur nötig &bull; Datei: index.html + game.js, keine Cookies, kein Tracking
+  brett.martuni.de &bull; Bf 109 Browser-Sim v3.1 (Flugmodell, Maus, MG 151/20) &bull; Steuerung: nur Tastatur nötig &bull; Datei: index.html + game.js, keine Cookies, kein Tracking
 </footer>
-<script src="game.js?v=3.0"></script>
+<script src="game.js?v=3.1"></script>
 </body>
 </html>

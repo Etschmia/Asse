@@ -78,21 +78,32 @@ const G = {
   shake: 0,
   started: false,
 };
+const AMMO_MG = 600, AMMO_KAN = 200; // 2× MG 131 à 300 Schuss, MG 151/20 mit 200 Schuss
+const WEAPON_NAME = ['MG 131','MG 151/20','MG + Kanone'];
 const P = {
   x:0, y:1200, z:-2500,
-  heading: 0,   // rad, 0 = Nord (+z), Uhrzeigersinn
+  B: basis(0,0,0),  // Lage als Achsen: vorn f, rechts r, oben u
+  V: [0,0,125],     // Geschwindigkeit in Weltkoordinaten (m/s)
+  wp:0, wq:0, wr:0, // Drehraten Rollen / Nicken / Gieren (rad/s)
+  heading: 0,   // rad, 0 = Nord (+z), Uhrzeigersinn – aus B abgeleitet
   pitch: 0,     // rad
   roll: 0,      // rad, + = rechte Fläche unten
-  speed: 320,   // km/h
-  throttle: 0.7,
-  ammo: 500,
+  speed: 450,   // km/h wahre Fahrt
+  ias: 450,     // km/h angezeigte Fahrt (Fahrtmesser)
+  alpha: 0, beta: 0, nz: 1, gSm: 1,
+  trim: 0.05,   // Höhentrimmung (Anstellwinkel bei Knüppel mittig, rad)
+  stall: false, dropDir: 1, onGround: false,
+  sx: 0, sy: 0, sr: 0, // Knüppel/Pedale, Tastaturanteil (-1..1)
+  throttle: 0.75,
+  ammoMG: AMMO_MG, ammoKan: AMMO_KAN, weapon: 0,
+  mgCd: 0, kanCd: 0,
   hp: 100,
   flaps: false,
   gear: false,
   vy: 0,
-  fireCd: 0,
   dead: false,
 };
+const MOUSE = {x:0, y:0, l:false, r:false, locked:false, sens:0.0035};
 
 let enemies=[], bullets=[], ebullets=[], parts=[], clouds=[], patches=[], statics=[], flak=[];
 let keys={};
@@ -235,9 +246,11 @@ function spawnWave(n){
 }
 
 function resetMission(){
-  P.x=0; P.y=1200; P.z=-2500; P.heading=0; P.pitch=0; P.roll=0;
-  P.speed=320; P.throttle=0.7; P.ammo=500; P.hp=100;
-  P.flaps=false; P.gear=false; P.fireCd=0; P.dead=false;
+  P.x=0; P.y=1200; P.z=-2500; P.B=basis(0,0,0); P.V=[0,0,450/3.6];
+  P.wp=P.wq=P.wr=0; P.sx=P.sy=P.sr=0; MOUSE.x=MOUSE.y=0;
+  P.throttle=0.75; P.ammoMG=AMMO_MG; P.ammoKan=AMMO_KAN; P.hp=100;
+  P.flaps=false; P.gear=false; P.mgCd=0; P.kanCd=0; P.dead=false; P.onGround=false; P.stall=false; P.gSm=1;
+  P.trim=trimFor(450/3.6,1200); syncEuler();
   bullets=[]; ebullets=[]; parts=[]; enemies=[];
   G.kills=0; G.score=0; G.flash=0; G.shake=0; G.hitMark=0; G.hitKill=0; G.mode='fly'; G.paused=false; G.started=true;
   G.waveClear=false; G.nextWaveT=0; G.target=null; G.flakWarned=false; G.deadT=0;
@@ -293,6 +306,7 @@ window.addEventListener('keydown', e=>{
   const k = e.key;
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(k)) e.preventDefault();
   if(k==='F1'){ e.preventDefault(); HELP_TOGGLE(); return; }
+  if(k==='Escape'&&performance.now()<escIgnoreUntil) return; // Esc hat nur die Maus freigegeben
   keys[k.toLowerCase()]=true; keys[k]=true;
   audioInit(); if(AC&&AC.state==='suspended') AC.resume();
   if(e.repeat) return;
@@ -311,9 +325,50 @@ window.addEventListener('keydown', e=>{
   else if(k==='l'||k==='L') toggleSound();
   else if(k==='f'||k==='F') { if(G.mode==='fly'){ P.flaps=!P.flaps; setMsg(P.flaps?'Landeklappen AUSGEFAHREN':'Landeklappen EINGEFAHREN'); } }
   else if(k==='g'||k==='G') { if(G.mode==='fly'){ P.gear=!P.gear; setMsg(P.gear?'Fahrwerk AUSGEFAHREN':'Fahrwerk EINGEFAHREN'); } }
+  else if(k==='1'||k==='2'||k==='3') selectWeapon(+k-1);
+  else if(k==='Home') { MOUSE.x=0; MOUSE.y=0; setMsg('Knüppel mittig',1); }
+});
+function selectWeapon(i){
+  P.weapon=((i%3)+3)%3;
+  document.getElementById('btnWeapon').textContent='Waffe: '+WEAPON_NAME[P.weapon]+' (1/2/3)';
+  if(G.mode==='fly') setMsg('Waffe: '+WEAPON_NAME[P.weapon],1.5);
+}
+// Maus: Klick ins Bild fängt den Zeiger, Bewegung = Steuerknüppel, links = Feuer, rechts = Kanone, Rad = Gas
+let escIgnoreUntil=0;
+canvas.addEventListener('mousedown', e=>{
+  audioInit(); if(AC&&AC.state==='suspended') AC.resume();
+  if(G.mode==='title') resetMission();
+  if(!MOUSE.locked){
+    if(canvas.requestPointerLock) canvas.requestPointerLock();
+    if(G.paused) G.paused=false;
+    e.preventDefault(); return;
+  }
+  if(e.button===0) MOUSE.l=true;
+  else if(e.button===2) MOUSE.r=true;
+  else if(e.button===1){ MOUSE.x=0; MOUSE.y=0; e.preventDefault(); }
+});
+window.addEventListener('mouseup', e=>{ if(e.button===0) MOUSE.l=false; else if(e.button===2) MOUSE.r=false; });
+canvas.addEventListener('contextmenu', e=>e.preventDefault());
+document.addEventListener('mousemove', e=>{
+  if(!MOUSE.locked||G.mode!=='fly'||G.paused) return;
+  if(Math.abs(e.movementX)>200||Math.abs(e.movementY)>200) return; // Ausreißer mancher Browser beim Pointer-Lock
+  MOUSE.x=clamp(MOUSE.x+e.movementX*MOUSE.sens,-1,1);
+  MOUSE.y=clamp(MOUSE.y+e.movementY*MOUSE.sens,-1,1);  // Maus zu sich = ziehen
+});
+canvas.addEventListener('wheel', e=>{
+  if(G.mode!=='fly') return;
+  e.preventDefault();
+  P.throttle=clamp(P.throttle-Math.sign(e.deltaY)*0.05,0,1);
+},{passive:false});
+document.addEventListener('pointerlockchange', ()=>{
+  MOUSE.locked=document.pointerLockElement===canvas;
+  if(!MOUSE.locked){
+    MOUSE.l=MOUSE.r=false;
+    if(G.mode==='fly'&&!G.paused){ G.paused=true; escIgnoreUntil=performance.now()+300; status('PAUSE – Maus freigegeben. Klick ins Bild = weiter'); }
+  } else status('Maussteuerung aktiv: Bewegung = Knüppel, links = Feuer, rechts = Kanone, Rad = Gas, Mitteltaste = Knüppel mittig. Esc gibt die Maus frei.');
 });
 window.addEventListener('keyup', e=>{ keys[e.key.toLowerCase()]=false; keys[e.key]=false; });
-window.addEventListener('blur', ()=>{ keys={}; });
+window.addEventListener('blur', ()=>{ keys={}; MOUSE.l=MOUSE.r=false; });
 
 // Buttons
 document.getElementById('btnStart').onclick=()=>{ audioInit(); resetMission(); };
@@ -326,8 +381,117 @@ document.getElementById('btnRepair').onclick=()=>{ audioInit(); cheatRepair(); }
 document.getElementById('btnAmmo').onclick=()=>{ audioInit(); cheatAmmo(); };
 document.getElementById('btnSound').onclick=()=>toggleSound();
 document.getElementById('btnCockpit').onclick=()=>toggleCockpit();
+document.getElementById('btnWeapon').onclick=()=>selectWeapon(P.weapon+1);
 
 // ---------- Physik ----------
+// Flugmodell Bf 109 G-6: vereinfacht, aber mit echten Kräften. Wirkung der Ruder hängt vom
+// Staudruck ab (Fahrt + Luftdichte/Höhe), Auftrieb vom Anstellwinkel, oberhalb davon Abriss.
+const FM = {
+  m:3100, S:16.1, c:1.65, b:9.9, g:9.81,
+  CLa:4.8, aS:0.27, aSflap:0.25, aNeg:-0.2,     // Auftriebsanstieg, Abrisswinkel (rad)
+  CD0:0.024, k:0.075,                             // Nullwiderstand, induzierter Widerstand
+  Pmax:1.15e6, hCrit:5700, eta:0.82, Tstatic:14000, // DB 605: Leistung, Volldruckhöhe, Luftschraube
+  Iyy:4800, Cma:-0.9, Cmq:-20, deMax:0.24,       // Nicken: Stabilität, Dämpfung, Höhenruder (voll = etwa Rüttelgrenze)
+  Izz:7500, Cnb:0.09, Cndr:0.025, Cnr:-0.5, CYb:-0.8, // Gieren: Windfahne, Seitenruder, Dämpfung
+  nMax:7.5, nMin:-3.5,                            // mit Muskelkraft erreichbares Lastvielfaches
+};
+function rho(h){ return 1.225*Math.exp(-Math.max(0,h)/8500); }
+function trimFor(v,h){ return FM.m*FM.g/(0.5*rho(h)*v*v*FM.S*FM.CLa)-0.02; }
+function liftCoef(a,flaps){
+  const aS=flaps?FM.aSflap:FM.aS, add=flaps?0.35:0;
+  if(a>aS) return FM.CLa*(aS+0.02)*Math.max(0.5,1-(a-aS)*2)+add;
+  if(a<FM.aNeg) return FM.CLa*(FM.aNeg+0.02)*Math.max(0.5,1-(FM.aNeg-a)*2);
+  return FM.CLa*(a+0.02)+add;
+}
+function syncEuler(){
+  const B=P.B;
+  P.pitch=Math.asin(clamp(B.f[1],-1,1));
+  P.heading=Math.atan2(B.f[0],B.f[2]);
+  P.roll=Math.atan2(-B.r[1],B.u[1]);
+}
+function cross(a,b){ return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]; }
+function integrateAttitude(dt){
+  const B=P.B, f=B.f, r=B.r, u=B.u;
+  // Rollen + = rechte Fläche runter, Nicken + = Nase hoch, Gieren + = Nase nach rechts
+  const w=[-P.wp*f[0]-P.wq*r[0]+P.wr*u[0], -P.wp*f[1]-P.wq*r[1]+P.wr*u[1], -P.wp*f[2]-P.wq*r[2]+P.wr*u[2]];
+  const df=cross(w,f), du=cross(w,u);
+  const nf=norm([f[0]+df[0]*dt, f[1]+df[1]*dt, f[2]+df[2]*dt]);
+  let nu=[u[0]+du[0]*dt, u[1]+du[1]*dt, u[2]+du[2]*dt];
+  const d=dot(nu,nf); nu=norm([nu[0]-nf[0]*d, nu[1]-nf[1]*d, nu[2]-nf[2]*d]);
+  P.B={f:nf, r:cross(nu,nf), u:nu};
+}
+// Ein Integrationsschritt; da/de/dr = Quer-/Höhen-/Seitenruder (-1..1). Gibt false bei Absturz zurück.
+function flightStep(dt,da,de,dr){
+  const B=P.B, V=P.V;
+  const sp=Math.hypot(V[0],V[1],V[2]), spS=Math.max(sp,1);
+  const rh=rho(P.y), sig=rh/1.225, qbar=0.5*rh*sp*sp, qn=qbar/7500;
+  const a=Math.atan2(-dot(V,B.u),dot(V,B.f)), be=Math.asin(clamp(dot(V,B.r)/spS,-1,1));
+  const ias=sp*Math.sqrt(sig);
+  P.alpha=a; P.beta=be; P.speed=sp*3.6; P.ias=ias*3.6;
+  const aS=P.flaps?FM.aSflap:FM.aS;
+  const exc=a>aS?a-aS:(a<FM.aNeg?FM.aNeg-a:0);
+  const stalled=exc>0;
+  if(stalled&&!P.stall) P.dropDir=Math.abs(be)>0.03?Math.sign(be):(Math.random()<0.5?-1:1); // Abkippen
+  P.stall=stalled;
+  // Kräfte: Auftrieb ⟂ Anströmung, Widerstand, Seitenkraft, Schub, Gewicht
+  const CL=liftCoef(clamp(a,-1.2,1.2),P.flaps);
+  const CD=FM.CD0+(P.flaps?0.035:0)+(P.gear?0.025:0)+FM.k*CL*CL+exc*1.2+0.4*be*be;
+  const Vh=[V[0]/spS,V[1]/spS,V[2]/spS];
+  const ud=dot(B.u,Vh), Ld=norm([B.u[0]-Vh[0]*ud, B.u[1]-Vh[1]*ud, B.u[2]-Vh[2]*ud]);
+  const L=qbar*FM.S*CL, D=qbar*FM.S*CD, Y=qbar*FM.S*FM.CYb*be;
+  const pw=FM.Pmax*P.throttle*(P.y<FM.hCrit?1:rh/rho(FM.hCrit));  // oberhalb Volldruckhöhe weniger Leistung
+  const T=Math.min(FM.eta*pw/Math.max(sp,20), FM.Tstatic*P.throttle);
+  for(let i=0;i<3;i++) V[i]+=(L*Ld[i]-D*Vh[i]+Y*B.r[i]+T*B.f[i])/FM.m*dt;
+  V[1]-=FM.g*dt;
+  P.nz=(L*dot(Ld,B.u)-D*dot(Vh,B.u))/(FM.m*FM.g);
+  // Nicken: Knüppel verschiebt den Gleichgewichts-Anstellwinkel; bei hoher Fahrt begrenzen die
+  // Steuerkräfte den Ausschlag (Lastvielfaches), bei wenig Fahrt wird das Ruder weich.
+  const qS=qbar*FM.S*FM.CLa;
+  const authP=qS>1?clamp(FM.nMax*FM.m*FM.g/qS/FM.deMax,0.15,1):1;
+  const authN=qS>1?clamp(-FM.nMin*FM.m*FM.g/qS/FM.deMax,0.15,1):1;
+  const deE=de>0?de*authP:de*authN;
+  const Cm=FM.Cma*(clamp(a,-0.6,0.6)-P.trim)-FM.Cma*FM.deMax*deE+FM.Cmq*P.wq*FM.c/(2*spS);
+  P.wq=clamp(P.wq+qbar*FM.S*FM.c*Cm/FM.Iyy*dt,-3,3);
+  // Rollen: Rollrate wächst mit der Fahrt, wird oberhalb ~380 km/h wieder schwerer (Querruderkräfte)
+  const pmax=ias<105?1.9*Math.max(ias,15)/105:1.9*Math.pow(105/ias,0.9);
+  const tau=clamp(0.35*60/Math.max(ias,20),0.08,0.8);
+  let pd=(da*pmax*(stalled?0.35:1)-P.wp)/tau-6*be*qn;          // V-Stellung: Schieben rollt
+  if(stalled) pd+=P.dropDir*exc*15*clamp(qn*3,0.3,1.5);  // Vorflügel: gutmütiges Abkippen
+  P.wp=clamp(P.wp+pd*dt,-4,4);
+  // Gieren: Windfahnenstabilität, Seitenruder, Dämpfung; im Abriss Trudelneigung
+  const Cn=FM.Cnb*be+FM.Cndr*dr+FM.Cnr*P.wr*FM.b/(2*spS);
+  let rd=qbar*FM.S*FM.b*Cn/FM.Izz;
+  if(stalled) rd+=P.dropDir*exc*6;
+  P.wr=clamp(P.wr+rd*dt,-2,2);
+  integrateAttitude(dt);
+  P.x+=V[0]*dt; P.y+=V[1]*dt; P.z+=V[2]*dt;
+  syncEuler();
+  // Boden: Landung nur mit Fahrwerk, sanft, langsam, Flächen fast waagerecht – und nicht im Kanal
+  if(P.y<=2){
+    const water=P.z>coastZ(P.x);
+    const ok=P.gear&&!water&&V[1]>-5&&P.ias<280&&Math.abs(P.roll)<0.35&&P.pitch>-0.12;
+    if(!ok){ crash(water?'NOTWASSERUNG im Kanal – Maschine versinkt.':(P.gear?'HARTE LANDUNG – Fahrwerk gebrochen, Maschine zerschellt.':'BODENBERÜHRUNG – Maschine zerschellt.')); return false; }
+    P.y=2; P.onGround=true;
+    let hs=Math.hypot(V[0],V[2]);
+    hs=Math.max(0,hs-(P.throttle<0.15?5:0.6)*dt);          // Rollreibung, im Leerlauf bremsen
+    P.B=basis(P.heading+dr*0.5*dt,clamp(P.pitch,0,0.2),P.roll*0.9); // Spornrad: Nase 0–11°
+    syncEuler();
+    V[0]=Math.sin(P.heading)*hs; V[2]=Math.cos(P.heading)*hs; if(V[1]<0) V[1]=0;
+    P.wp=0; P.wr=0; P.nz=1; if(P.wq<0&&P.pitch<=0.001) P.wq=0;
+  } else if(P.y>3) P.onGround=false;
+  return true;
+}
+// Tastatur fährt Ausschläge rampenförmig an (kurz tippen = kleiner Ausschlag)
+function ramp(v,t,dt){ const rate=t===0?5:(v*t<0?6:2.2); return v+clamp(t-v,-rate*dt,rate*dt); }
+// Expo-Kennlinie: fein um die Mitte, voller Ausschlag am Anschlag
+function expo(s){ return 0.35*s+0.65*s*s*s; }
+function spawnBullet(side,up,mv,grav,kan){
+  const B=P.B, f=B.f, sp=0.005*mv;
+  const x=P.x+f[0]*8+B.r[0]*side+B.u[0]*up, y=P.y+f[1]*8+B.r[1]*side+B.u[1]*up, z=P.z+f[2]*8+B.r[2]*side+B.u[2]*up;
+  bullets.push({x,y,z,
+    vx:P.V[0]+f[0]*mv+rnd(-0.5,0.5)*sp, vy:P.V[1]+f[1]*mv+rnd(-0.5,0.5)*sp, vz:P.V[2]+f[2]*mv+rnd(-0.5,0.5)*sp,
+    life:kan?1.9:1.6, g:grav, kan});
+}
 function viewVec(h, p){ const c=Math.cos(p); return {x:Math.sin(h)*c, y:Math.sin(p), z:Math.cos(h)*c}; }
 function dist3(ax,ay,az,bx,by,bz){ const dx=ax-bx,dy=ay-by,dz=az-bz; return Math.sqrt(dx*dx+dy*dy+dz*dz); }
 function mkPart(kind,x,y,z,vx,vy,vz,life,r0,r1,g,drag){
@@ -343,86 +507,62 @@ function update(dt){
   if(G.shake>0) G.shake-=dt*3;
   if(G.hitMark>0) G.hitMark-=dt;
   if(G.hitKill>0) G.hitKill-=dt;
-  if(P.fireCd>0) P.fireCd-=dt;
+  if(P.mgCd>0) P.mgCd-=dt;
+  if(P.kanCd>0) P.kanCd-=dt;
 
-  // --- Steuerung ---
-  const left = keys['ArrowLeft'], right = keys['ArrowRight'];
-  const up = keys['ArrowUp'], down = keys['ArrowDown'];
-  const rudL = keys['a'], rudR = keys['d'];
-  let targetRoll=0;
-  if(left) targetRoll=-1.05;   // ~60°
-  if(right) targetRoll=1.05;
-  const stall = P.speed<180;
-  const agility = stall?0.4:1.0;
-  P.roll += (targetRoll-P.roll)*Math.min(1,dt*3.2*agility);
-  let pitchIn=0;
-  if(up) pitchIn-=1;    // drücken
-  if(down) pitchIn+=1;  // ziehen
-  P.pitch += pitchIn*dt*0.9*agility;
-  P.pitch = Math.max(-1.2,Math.min(1.2,P.pitch));
-  // Seitenruder: Fein-Heading (A=links=Kurs kleiner, D=rechts=Kurs größer)
-  if(rudL) P.heading-=dt*0.35;
-  if(rudR) P.heading+=dt*0.35;
-  // Kurve aus Rollen (rechts rollen = Rechtskurve = Kurs größer)
-  P.heading += P.roll*dt*(0.55+P.speed/900);
-  // Gas
+  // --- Steuerung: Tastatur + Maus ergeben Knüppel/Pedal-Stellung ---
+  P.sx=ramp(P.sx,(keys['ArrowRight']?1:0)-(keys['ArrowLeft']?1:0),dt);
+  P.sy=ramp(P.sy,(keys['ArrowDown']?1:0)-(keys['ArrowUp']?1:0),dt);   // ↓ = ziehen
+  P.sr=ramp(P.sr,(keys['d']?1:0)-(keys['a']?1:0),dt);
+  const da=expo(clamp(P.sx+MOUSE.x,-1,1)), de=expo(clamp(P.sy+MOUSE.y,-1,1)), dr=expo(P.sr);
+  // Gas (W/S, +/-, Mausrad) und Höhentrimmung (Q = kopflastig, E = schwanzlastig)
   if(keys['w']||keys['+']||keys['=']) P.throttle=Math.min(1,P.throttle+dt*0.6);
   if(keys['s']||keys['-']||keys['_']) P.throttle=Math.max(0,P.throttle-dt*0.6);
+  if(keys['q']) P.trim=Math.max(-0.08,P.trim-dt*0.04);
+  if(keys['e']) P.trim=Math.min(0.2,P.trim+dt*0.04);
 
-  // Geschwindigkeit
-  let target = 175 + P.throttle*445;
-  if(P.flaps) target-=60;
-  if(P.gear) target-=45;
-  // Steigen kostet, Sinken bringt
-  target -= Math.sin(P.pitch)*120;
-  if(stall) target+=40; // Nase runter lernt man schnell
-  P.speed += (target-P.speed)*Math.min(1,dt*0.7);
-  P.speed = Math.max(90,Math.min(720,P.speed));
-
-  // Übergeschwindigkeit: Schaden
-  if(P.speed>660){ P.hp-=dt*4; if(Math.random()<dt*4) setMsg('ACHTUNG: Übergeschwindigkeit! Struktur!'); }
-
-  // Bewegung
-  const v = viewVec(P.heading,P.pitch);
-  const ms = P.speed/3.6; // m/s
-  P.vy = v.y*ms;
-  P.x+=v.x*ms*dt; P.y+=v.y*ms*dt; P.z+=v.z*ms*dt;
-  // Boden
-  if(P.y<=2){
-    if(P.gear&&P.speed<260&&Math.abs(v.y)<0.06&&P.y>=-2){
-      P.y=2; P.pitch=0; // holprige Notlandung -> weiterrollen
-      if(P.ammo<500&&Math.random()<dt){P.ammo=Math.min(500,Math.round(P.ammo+dt*60)); P.hp=Math.min(100,P.hp+dt*5);}
-      setMsg('Notlandung – wird aufmunitioniert …',0.2);
-    } else {
-      return crash('BODENBERÜHRUNG – Maschine zerschellt.');
-    }
+  // --- Flugmodell in kleinen Schritten (stabil auch bei hoher Fahrt) ---
+  const nSub=Math.ceil(dt/0.008);
+  for(let i=0;i<nSub;i++) if(!flightStep(dt/nSub,da,de,dr)) return;
+  P.vy=P.V[1];
+  P.gSm+=(P.nz-P.gSm)*Math.min(1,dt*1.5);
+  // Rückmeldung: Rütteln kurz vor dem Abriss, Warnungen, Strukturgrenzen
+  const aS=P.flaps?FM.aSflap:FM.aS;
+  if(P.alpha>aS*0.85&&!P.onGround) G.shake=Math.max(G.shake,Math.min(0.8,(P.alpha/aS-0.85)*3));
+  if(P.stall&&!P.onGround&&Math.random()<dt*1.5) setMsg('ABRISS! Knüppel nachlassen, Nase runter!',1.5);
+  if(P.ias>760){ P.hp-=dt*6; if(Math.random()<dt*3) setMsg('ACHTUNG: Übergeschwindigkeit! Struktur!'); }
+  if(P.nz>10||P.nz<-5){ P.hp-=dt*25; if(Math.random()<dt*4) setMsg('ÜBERLASTUNG! Zelle ächzt!'); }
+  if(P.hp<=0){ P.hp=0; return crash('STRUKTURBRUCH – Tragfläche abgerissen.'); }
+  if(P.onGround&&Math.hypot(P.V[0],P.V[2])<15){
+    P.ammoMG=Math.min(AMMO_MG,P.ammoMG+dt*120); P.ammoKan=Math.min(AMMO_KAN,P.ammoKan+dt*40); P.hp=Math.min(100,P.hp+dt*10);
+    setMsg('Am Boden: Aufmunitionieren + Reparatur …',0.2);
   }
-  if(P.y>8000){P.y=8000;P.pitch=Math.min(P.pitch,0);}
-  // Stall-Verhalten
-  if(stall){ P.pitch-=dt*0.5; P.y-=dt*18; if(Math.random()<dt) setMsg('ABRISS! Nase runter, Gas rein!'); }
 
-  // Feuern: 2 Garben aus der Motorhaube, erben die eigene Fahrt
-  if(keys[' ']&&P.fireCd<=0&&P.ammo>0){
-    P.fireCd=0.09; P.ammo-=2;
-    const spread=0.006, B=basis(P.heading,P.pitch,P.roll), mv=900+ms;
-    for(let i=0;i<2;i++){
-      const side=i?0.45:-0.45;
-      const sx=P.x+v.x*8+B.r[0]*side, sy=P.y+v.y*8-0.6+B.r[1]*side, sz=P.z+v.z*8+B.r[2]*side;
-      bullets.push({x:sx, y:sy, z:sz,
-        vx:v.x*mv+(Math.random()-0.5)*spread*900, vy:v.y*mv+(Math.random()-0.5)*spread*900, vz:v.z*mv+(Math.random()-0.5)*spread*900,
-        life:1.6});
-    }
-    noiseBurst(0.09,0.22,1800);
-    G.shake=Math.min(0.6,G.shake+0.12);
+  // --- Waffen: 1 = MG 131, 2 = MG 151/20, 3 = beide; Leertaste/linke Maus = Auswahl, rechte Maus = Kanone ---
+  const trig=keys[' ']||MOUSE.l;
+  const fireMG=trig&&P.weapon!==1, fireKan=(trig&&P.weapon!==0)||MOUSE.r;
+  if(fireMG&&P.mgCd<=0&&P.ammoMG>=2){
+    P.mgCd=0.067; P.ammoMG-=2;
+    spawnBullet(-0.35,0.35,900,4,false); spawnBullet(0.35,0.35,900,4,false);
+    noiseBurst(0.08,0.2,1800);
+    G.shake=Math.min(0.6,G.shake+0.1);
   }
-  if(P.ammo<=0){P.ammo=0; if(Math.random()<dt*0.5) setMsg('MUNITION LEER – zum Platz zurück! (N = neu)');}
+  if(fireKan&&P.kanCd<=0&&P.ammoKan>=1){
+    P.kanCd=0.086; P.ammoKan-=1;
+    spawnBullet(0,-0.1,750,9.8,true);
+    noiseBurst(0.12,0.32,650);
+    G.shake=Math.min(0.8,G.shake+0.18);
+  }
+  P.ammoMG=Math.floor(P.ammoMG*100)/100;
+  if((fireMG&&P.ammoMG<2)||(fireKan&&P.ammoKan<1)){ if(Math.random()<dt*2) setMsg((fireKan&&P.ammoKan<1?'KANONE':'MG')+' LEER – anderes Gerät wählen (1/2/3) oder landen!',1.5); }
 
   // Eigene Rauchfahne bei Schaden (entsteht hinter der Maschine)
   if(P.hp<45){
     G.smokeT-=dt;
     if(G.smokeT<=0){
+      const f=P.B.f;
       G.smokeT=P.hp<25?0.04:0.07;
-      parts.push(mkPart(P.hp<25?'dsmoke':'smoke', P.x-v.x*7, P.y-v.y*7+0.5, P.z-v.z*7, rnd(-2,2),rnd(0,2),rnd(-2,2), rnd(1.5,2.5), 4, rnd(12,18), -1, 0.3));
+      parts.push(mkPart(P.hp<25?'dsmoke':'smoke', P.x-f[0]*7, P.y-f[1]*7+0.5, P.z-f[2]*7, rnd(-2,2),rnd(0,2),rnd(-2,2), rnd(1.5,2.5), 4, rnd(12,18), -1, 0.3));
     }
   }
 
@@ -474,9 +614,10 @@ function cheatRepair(){
   if(G.mode==='dead'){
     // Wiederbeleben in der Luft (Cheat)
     G.mode='fly'; P.dead=false; G.paused=false;
-    P.hp=100; P.ammo=Math.max(P.ammo,200);
+    P.hp=100; P.ammoMG=Math.max(P.ammoMG,300); P.ammoKan=Math.max(P.ammoKan,100);
     P.y=Math.max(P.y,900); if(!(P.y>50)) P.y=1200;
-    P.speed=Math.max(P.speed,300); P.pitch=0; P.roll=0;
+    P.B=basis(P.heading,0,0); P.V=[P.B.f[0]*115,0,P.B.f[2]*115];
+    P.wp=P.wq=P.wr=0; P.onGround=false; P.stall=false; P.trim=trimFor(115,P.y); syncEuler();
     G.flash=0; G.shake=0;
     setMsg('CHEAT: Flugzeug instand gesetzt – zurück in der Luft!');
     status('CHEAT Reparatur: 100 % Hülle, weiter gehts!');
@@ -489,10 +630,11 @@ function cheatRepair(){
 }
 function cheatAmmo(){
   if(!G.started||(G.mode!=='fly'&&G.mode!=='dead')){ setMsg('Erst ENTER = Start, dann B = Munition'); return; }
-  P.ammo=500;
-  if(G.mode==='dead'){ setMsg('CHEAT: Volle Munition – 500 Schuss (trotzdem ENTER für Neustart)'); }
-  else { setMsg('CHEAT: Volle Munition – 500 Schuss'); }
-  status('CHEAT Munition: 500 Schuss');
+  P.ammoMG=AMMO_MG; P.ammoKan=AMMO_KAN;
+  const t='Volle Munition – MG '+AMMO_MG+', Kanone '+AMMO_KAN;
+  if(G.mode==='dead'){ setMsg('CHEAT: '+t+' (trotzdem ENTER für Neustart)'); }
+  else { setMsg('CHEAT: '+t); }
+  status('CHEAT '+t);
   noiseBurst(0.2,0.15,900);
 }
 
@@ -516,20 +658,21 @@ function killEnemy(e, rammed){
   for(let i=0;i<6;i++) parts.push(mkPart('fire', e.x+rnd(-3,3), e.y+rnd(-3,3), e.z+rnd(-3,3), rnd(-8,8),rnd(-4,8),rnd(-8,8), rnd(0.4,0.8), 3, rnd(9,16)));
   noiseBurst(0.5,0.4,500);
   setMsg((rammed?'Gerammt! ':'')+getKillText(e)+'  ('+G.kills+' Abschüsse)');
-  if(!rammed) P.ammo=Math.min(500,P.ammo+40);
+  if(!rammed){ P.ammoMG=Math.min(AMMO_MG,P.ammoMG+40); P.ammoKan=Math.min(AMMO_KAN,P.ammoKan+10); }
 }
 
 function updateBullets(dt){
   // eigene
   for(let i=bullets.length-1;i>=0;i--){
     const b=bullets[i]; b.life-=dt;
-    b.x+=b.vx*dt; b.y+=b.vy*dt; b.z+=b.vz*dt; b.vy-=dt*4;
+    b.x+=b.vx*dt; b.y+=b.vy*dt; b.z+=b.vz*dt; b.vy-=dt*(b.g||4);
     if(b.life<=0||b.y<0){bullets.splice(i,1);continue;}
     for(const e of enemies){
       if(!e.alive) continue;
       const r = e.type==='b17'?28:15;
       if(dist3(b.x,b.y,b.z,e.x,e.y,e.z)<r){
-        e.hp-= (e.type==='b17'?6:11);
+        e.hp-= b.kan ? (e.type==='b17'?20:32) : (e.type==='b17'?6:11);
+        if(b.kan) parts.push(mkPart('fire', b.x,b.y,b.z, e.vx*0.8,e.vy*0.8,e.vz*0.8, 0.3, 2, 6));
         e.hitT=0.3;
         G.hitMark=0.4;
         spark(b.x,b.y,b.z,8);
@@ -977,6 +1120,9 @@ function setCam(x,y,z,h,p,r,cy){
   const B=basis(h,p,r);
   CAM.x=x; CAM.y=y; CAM.z=z; CAM.h=h; CAM.p=p; CAM.r=r; CAM.f=B.f; CAM.rt=B.r; CAM.u=B.u; CAM.cx=VW/2; CAM.cy=cy;
 }
+function setCamB(x,y,z,B,cy){
+  CAM.x=x; CAM.y=y; CAM.z=z; CAM.f=B.f; CAM.rt=B.r; CAM.u=B.u; CAM.cx=VW/2; CAM.cy=cy;
+}
 function lookCam(x,y,z,tx,ty,tz,cy){
   const dx=tx-x, dy=ty-y, dz=tz-z;
   setCam(x,y,z,Math.atan2(dx,dz),Math.atan2(dy,Math.hypot(dx,dz)),0,cy);
@@ -1015,10 +1161,10 @@ function setupCamera(){
     const a=G.deadT*0.25+P.heading+Math.PI, ty=Math.max(P.y,0);
     lookCam(P.x+Math.sin(a)*90, ty+35, P.z+Math.cos(a)*90, P.x,ty,P.z, VH*0.5);
   } else if(G.extView){
-    const B=basis(P.heading,P.pitch*0.85,P.roll*0.4);
-    setCam(P.x-B.f[0]*17+B.u[0]*3.8, P.y-B.f[1]*17+B.u[1]*3.8, P.z-B.f[2]*17+B.u[2]*3.8, P.heading,P.pitch*0.85,P.roll*0.4, VH*0.5);
+    const B=P.B;
+    setCamB(P.x-B.f[0]*17+B.u[0]*3.8, P.y-B.f[1]*17+B.u[1]*3.8, P.z-B.f[2]*17+B.u[2]*3.8, B, VH*0.5);
   } else {
-    setCam(P.x,P.y,P.z,P.heading,P.pitch,P.roll,VH*0.46);
+    setCamB(P.x,P.y,P.z,P.B,VH*0.46);
   }
 }
 
@@ -1033,8 +1179,18 @@ function draw(){
   renderWorld(null);
   const cockpitView = G.mode==='fly' && !G.extView;
   if(cockpitView&&P.hp<45) drawCockpitSmoke();
-  if(G.mode==='fly'){ drawTarget(); if(cockpitView) drawSight(); }
+  if(G.mode==='fly'){
+    // Hohe g-Last: Grau-/Schwarzsehen, negative g: Rotsehen
+    const gk=P.gSm;
+    if(gk>5){
+      const a=clamp((gk-5)/3,0,0.92), rg=ctx.createRadialGradient(VW/2,VH*0.46,Math.max(4,90*(1-a)),VW/2,VH*0.46,200);
+      rg.addColorStop(0,'rgba(0,0,0,0)'); rg.addColorStop(0.35,`rgba(0,0,0,${a*0.7})`); rg.addColorStop(1,`rgba(0,0,0,${Math.min(1,a*1.2)})`);
+      ctx.fillStyle=rg; ctx.fillRect(-4,-4,VW+8,VH+8);
+    } else if(gk<-2){ ctx.fillStyle=`rgba(150,0,0,${clamp((-gk-2)/2.5,0,0.7)})`; ctx.fillRect(-4,-4,VW+8,VH+8); }
+    drawTarget(); if(cockpitView) drawSight();
+  }
   if(cockpitView&&G.cockpit) drawCockpit();
+  if(G.mode==='fly') drawStick(cockpitView&&G.cockpit?46:6, cockpitView&&G.cockpit?120:VH-30);
   drawHud();
   if(G.showMap) drawMap();
   if(G.msgT>0&&G.msg) drawCenterText(G.msg,32);
@@ -1068,11 +1224,11 @@ function renderWorld(extra){
     add(e.x,e.y,e.z,()=>drawModel(MODELS[e.type],e.x,e.y,e.z,B,VIS[e.type],e.hitT>0?Math.min(0.7,e.hitT*2.5):0,true));
   }
   if(G.extView&&G.mode==='fly'){
-    const B=basis(P.heading,P.pitch,P.roll);
+    const B=P.B;
     add(P.x,P.y,P.z,()=>drawModel(MODELS.bf109,P.x,P.y,P.z,B,1,0,true));
   }
   for(const p of parts) add(p.x,p.y,p.z,()=>drawPart(p));
-  for(const b of bullets) add(b.x,b.y,b.z,()=>drawTracer(b,20,'rgba(255,170,60,0.55)','#fff3b8'));
+  for(const b of bullets) add(b.x,b.y,b.z,b.kan?()=>drawTracer(b,26,'rgba(255,235,190,0.6)','#ffffff',1.6):()=>drawTracer(b,20,'rgba(255,170,60,0.55)','#fff3b8'));
   for(const b of ebullets) add(b.x,b.y,b.z,()=>drawTracer(b,16,'rgba(255,80,60,0.55)','#ffe2d6'));
   if(extra) extra(add);
   objs.sort((a,b)=>b.d-a.d);
@@ -1083,12 +1239,11 @@ function renderWorld(extra){
 
 // Horizont: Punkt auf der Horizontlinie, Richtung der Linie und Normale zum Boden hin
 function horizon(){
-  const sh=Math.sin(CAM.h), ch=Math.cos(CAM.h);
-  const dA=[sh-ch,0,ch+sh], dB=[sh+ch,0,ch-sh];
-  const A=scr([dot(dA,CAM.rt),dot(dA,CAM.u),dot(dA,CAM.f)]);
-  const B=scr([dot(dB,CAM.rt),dot(dB,CAM.u),dot(dB,CAM.f)]);
-  let dx=B[0]-A[0], dy=B[1]-A[1]; const L=Math.hypot(dx,dy)||1; dx/=L; dy/=L;
-  return {x:A[0], y:A[1], dx, dy, nx:-dy, ny:dx};
+  // Sehstrahl zu Bildpunkt (X,Y) = rt*X + u*Y + f*FOC; Horizont wo dessen Höhenanteil 0 ist
+  const a=CAM.rt[1], b=CAM.u[1], c=CAM.f[1]*FOC, L=Math.hypot(a,b);
+  if(L<1e-6) return {x:VW/2, y:c>0?VH+5000:-5000, dx:1, dy:0, nx:0, ny:1}; // senkrecht: nur Himmel bzw. Boden
+  const X0=-a*c/(L*L), Y0=-b*c/(L*L), nx=-a/L, ny=b/L;
+  return {x:CAM.cx+X0, y:CAM.cy-Y0, dx:ny, dy:-nx, nx, ny};
 }
 
 function drawSky(){
@@ -1276,13 +1431,13 @@ function drawPart(p){
 }
 
 // Leuchtspur als 3D-Strich
-function drawTracer(b,len,glow,core){
+function drawTracer(b,len,glow,core,wm){
   const n=Math.hypot(b.vx,b.vy,b.vz)||1;
   let a=toCam(b.x-b.vx/n*len,b.y-b.vy/n*len,b.z-b.vz/n*len), c=toCam(b.x,b.y,b.z);
   if(a[2]<NEAR&&c[2]<NEAR) return;
   if(a[2]<NEAR){ const t=(NEAR-a[2])/(c[2]-a[2]); a=[a[0]+(c[0]-a[0])*t,a[1]+(c[1]-a[1])*t,NEAR]; }
   if(c[2]<NEAR){ const t=(NEAR-c[2])/(a[2]-c[2]); c=[c[0]+(a[0]-c[0])*t,c[1]+(a[1]-c[1])*t,NEAR]; }
-  const s1=scr(a), s2=scr(c), w=clamp(90/Math.max(c[2],1),0.5,2);
+  const s1=scr(a), s2=scr(c), w=clamp(90/Math.max(c[2],1),0.5,2)*(wm||1);
   ctx.lineCap='round';
   ctx.strokeStyle=glow; ctx.lineWidth=w;
   ctx.beginPath(); ctx.moveTo(s1[0],s1[1]); ctx.lineTo(s2[0],s2[1]); ctx.stroke();
@@ -1313,8 +1468,8 @@ function drawTarget(){
     ctx.fillStyle=hp>0.55?'#7ee07e':(hp>0.25?'#ffd040':'#ff5040'); ctx.fillRect(s[0]-bw/2,s[1]-r-3.5,bw*hp,1);
     // Vorhaltepunkt: wohin zielen, damit die Garbe trifft (Geschosse erben die eigene Fahrt)
     if(!G.extView&&dist<800){
-      const t=dist/900, v=viewVec(P.heading,P.pitch), ms=P.speed/3.6;
-      const lc=toCam(e.x+(e.vx-v.x*ms)*t, e.y+(e.vy-v.y*ms)*t, e.z+(e.vz-v.z*ms)*t);
+      const kan=P.weapon===1, t=dist/(kan?750:900), gw=kan?9.8:4;
+      const lc=toCam(e.x+(e.vx-P.V[0])*t, e.y+(e.vy-P.V[1])*t+0.5*gw*t*t, e.z+(e.vz-P.V[2])*t);
       if(lc[2]>NEAR){
         const l=scr(lc);
         ctx.strokeStyle='rgba(255,220,120,0.95)'; ctx.lineWidth=0.7;
@@ -1355,7 +1510,8 @@ function drawSight(){
     ctx.beginPath(); ctx.moveTo(cx-6,cy-6);ctx.lineTo(cx-3,cy-3); ctx.moveTo(cx+6,cy-6);ctx.lineTo(cx+3,cy-3);
     ctx.moveTo(cx-6,cy+6);ctx.lineTo(cx-3,cy+3); ctx.moveTo(cx+6,cy+6);ctx.lineTo(cx+3,cy+3); ctx.stroke();
   }
-  if(P.ammo<100){ctx.fillStyle='#ff4030';ctx.font='5px '+MONO;ctx.textAlign='center';ctx.fillText('MUNITION KNAPP',cx,cy+24);ctx.textAlign='left';}
+  const low=P.weapon===1?P.ammoKan<30:(P.weapon===0?P.ammoMG<100:(P.ammoMG<100&&P.ammoKan<30));
+  if(low){ctx.fillStyle='#ff4030';ctx.font='5px '+MONO;ctx.textAlign='center';ctx.fillText('MUNITION KNAPP',cx,cy+24);ctx.textAlign='left';}
 }
 
 function drawCockpitSmoke(){
@@ -1390,7 +1546,7 @@ function drawCockpit(){
   ctx.fillStyle=rg; ctx.beginPath(); ctx.moveTo(151,148); ctx.lineTo(152.5,140); ctx.lineTo(167.5,140); ctx.lineTo(169,148); ctx.closePath(); ctx.fill();
   // Instrumente
   const alt=Math.max(0,P.y);
-  gauge(34,177,14,[{f:P.speed/750}],'km/h',Math.round(P.speed));
+  gauge(34,177,14,[{f:P.ias/750}],'km/h',Math.round(P.ias));
   gauge(74,177,14,[{f:(alt%1000)/1000,full:true},{f:alt/10000,full:true,len:0.55,w:1.3}],'Höhe',Math.round(alt)+' m');
   const vs=P.vy||0;
   gauge(114,177,14,[{f:(clamp(vs,-30,30)+30)/60}],'m/s',(vs>=0?'+':'')+Math.round(vs));
@@ -1400,9 +1556,30 @@ function drawCockpit(){
   const ata=0.6+P.throttle*0.82;
   gauge(246,177,14,[{f:(ata-0.5)/1.3}],'ata',ata.toFixed(2));
   // Zelle + Munition als Balken, Lampen für Fahrwerk / Klappen
-  bar(276,160,'ZELLE',P.hp/100,P.hp>50?'#7ee07e':(P.hp>25?'#ffd040':'#ff5040'));
-  bar(296,160,'MUN',P.ammo/500,'#ffd070');
-  lamp(281,196,'FW',P.gear); lamp(301,196,'KL',P.flaps);
+  bar(268,160,'ZELLE',P.hp/100,P.hp>50?'#7ee07e':(P.hp>25?'#ffd040':'#ff5040'));
+  bar(283,160,P.weapon===1?'mg':'MG',P.ammoMG/AMMO_MG,P.weapon===1?'#9a8a60':'#ffd070');
+  bar(298,160,P.weapon===0?'kan':'KAN',P.ammoKan/AMMO_KAN,P.weapon===0?'#9a8a60':'#ffb050');
+  lamp(277,196,'FW',P.gear); lamp(302,196,'KL',P.flaps);
+}
+// Knüppel + Pedale + Trimmung + Anstellwinkel (zeigt, was Maus/Tastatur gerade kommandieren)
+function drawStick(x,y){
+  const S=20;
+  ctx.fillStyle='rgba(0,0,0,0.45)'; ctx.fillRect(x-2,y-7,S+14,S+13);
+  ctx.strokeStyle='rgba(200,220,210,0.5)'; ctx.lineWidth=0.4; ctx.strokeRect(x,y,S,S);
+  ctx.beginPath(); ctx.moveTo(x+S/2,y); ctx.lineTo(x+S/2,y+S); ctx.moveTo(x,y+S/2); ctx.lineTo(x+S,y+S/2); ctx.stroke();
+  const sx=clamp(P.sx+MOUSE.x,-1,1), sy=clamp(P.sy+MOUSE.y,-1,1);
+  ctx.fillStyle='#ffd070'; ctx.beginPath(); ctx.arc(x+S/2+sx*S/2,y+S/2+sy*S/2,1.3,0,Math.PI*2); ctx.fill();
+  // Pedale
+  ctx.fillStyle='rgba(200,220,210,0.35)'; ctx.fillRect(x,y+S+2,S,1.2);
+  ctx.fillStyle='#ffd070'; ctx.fillRect(x+S/2+P.sr*S/2-0.8,y+S+1.5,1.6,2.2);
+  // Trimmung (Dreieck am rechten Rand)
+  const ty=y+S/2-clamp((P.trim-0.05)/0.15,-1,1)*S/2;
+  ctx.fillStyle='#9fe0ff'; ctx.beginPath(); ctx.moveTo(x+S+0.5,ty); ctx.lineTo(x+S+3,ty-1.5); ctx.lineTo(x+S+3,ty+1.5); ctx.closePath(); ctx.fill();
+  // Anstellwinkel bis zum Abriss
+  const aS=P.flaps?FM.aSflap:FM.aS, af=clamp(P.alpha/aS,0,1.2);
+  ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(x+S+5,y,3,S);
+  ctx.fillStyle=af>1?'#ff4030':(af>0.85?'#ffd040':'#7ee07e'); ctx.fillRect(x+S+5,y+S-S*Math.min(1,af),3,S*Math.min(1,af));
+  ctx.fillStyle='#bfbfb2'; ctx.font='3.5px '+MONO; ctx.fillText('KNÜPPEL  α',x,y-2);
 }
 function gauge(x,y,r,needles,label,txt){
   ctx.fillStyle='#46494c'; ctx.beginPath(); ctx.arc(x,y,r+1.6,0,Math.PI*2); ctx.fill();
@@ -1458,12 +1635,14 @@ function drawHud(){
   ctx.font='6px '+MONO;
   const kurs=String(Math.round(((P.heading*180/Math.PI)%360+360)%360)).padStart(3,'0');
   ctx.fillStyle='#a8e8a0';
-  ctx.fillText(`${Math.round(P.speed)} km/h  ${Math.round(Math.max(0,P.y))} m  Kurs ${kurs}°`+(inCockpit?'':`  Zelle ${Math.round(P.hp)}%  Mun ${P.ammo}`+(P.gear?'  FW':'')+(P.flaps?'  KL':'')),4,7);
+  if(!inCockpit) ctx.font='5px '+MONO;
+  ctx.fillText(`${Math.round(P.ias)} km/h  ${Math.round(Math.max(0,P.y))} m  Kurs ${kurs}°  ${P.nz.toFixed(1)} g  ${WEAPON_NAME[P.weapon]}`+(inCockpit?'':`  Zelle ${Math.round(P.hp)}%  MG ${Math.floor(P.ammoMG)}  Kan ${P.ammoKan}`+(P.gear?'  FW':'')+(P.flaps?'  KL':'')),4,7);
+  ctx.font='6px '+MONO;
   ctx.fillStyle='#ffc868'; ctx.textAlign='right';
   ctx.fillText(`Abschüsse ${G.kills}  Welle ${G.wave}  Punkte ${G.score}`,VW-4,7);
   ctx.textAlign='left';
   if(G.mode==='fly'&&Math.floor(performance.now()/300)%2===0){
-    const warn=P.speed<180?'ABRISS':(P.speed>660?'ÜBERGESCHWINDIGKEIT':(P.y<120&&!P.gear?'BODENNÄHE':''));
+    const warn=P.stall&&!P.onGround?'ABRISS':(P.ias>720?'ÜBERGESCHWINDIGKEIT':(P.nz>7.8?'ÜBERLAST':(P.y<150&&!P.gear&&P.V[1]<-3?'BODENNÄHE':'')));
     if(warn){ ctx.fillStyle='#ff4030'; ctx.font='bold 6px '+MONO; ctx.textAlign='center'; ctx.fillText(warn,VW/2,19); ctx.textAlign='left'; }
   }
 }
