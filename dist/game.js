@@ -1,4 +1,4 @@
-/* Aces über Europa – Browser-Hommage (eigener Code, keine Original-Assets)
+/* Asse über Europa – Browser-Hommage (eigener Code, keine Original-Assets)
  * Logik in 320×200 (VW/VH), gerendert über SCALE in bis zu 1280×800.
  * v3: echte 3D-Kamera, flach schattierte Polygonmodelle, Dunst, Wolken,
  *     Zielanzeige mit Vorhaltepunkt, Außenansicht. Tastatursteuerung, Bf 109 G-6 Standard.
@@ -1691,8 +1691,8 @@ function drawTitle(){
   ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fillRect(0,10,VW,36);
   ctx.textAlign='center';
   ctx.font='bold 18px Georgia, "Times New Roman", serif';
-  ctx.fillStyle='#1a1408'; ctx.fillText('ACES ÜBER EUROPA',VW/2+1,33);
-  ctx.fillStyle='#ffd27a'; ctx.fillText('ACES ÜBER EUROPA',VW/2,32);
+  ctx.fillStyle='#1a1408'; ctx.fillText('ASSE ÜBER EUROPA',VW/2+1,33);
+  ctx.fillStyle='#ffd27a'; ctx.fillText('ASSE ÜBER EUROPA',VW/2,32);
   ctx.font='6px '+MONO; ctx.fillStyle='#ececec';
   ctx.fillText('BROWSER-EDITION  ·  Bf 109 G-6  ·  KANALFRONT 1944',VW/2,42);
   ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(34,152,252,42);

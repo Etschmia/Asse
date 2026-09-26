@@ -1,4 +1,4 @@
-# Aces über Europa – Browser-Edition (Bf 109)
+# Asse über Europa – Browser-Edition (Bf 109)
 
 Fan-Hommage an das Spielprinzip von „Aces over Europe" (Dynamix, 1993):
 Jagdfliegerei an der Kanalfront im Browser – mit Tastatur, deutscher Hilfe,
