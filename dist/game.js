@@ -103,7 +103,7 @@ const P = {
   vy: 0,
   dead: false,
 };
-const MOUSE = {x:0, y:0, l:false, r:false, locked:false, sens:0.0035};
+const MOUSE = {x:0, y:0, l:false, r:false, active:false};
 
 let enemies=[], bullets=[], ebullets=[], parts=[], clouds=[], patches=[], statics=[], flak=[];
 let keys={};
@@ -306,7 +306,6 @@ window.addEventListener('keydown', e=>{
   const k = e.key;
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(k)) e.preventDefault();
   if(k==='F1'){ e.preventDefault(); HELP_TOGGLE(); return; }
-  if(k==='Escape'&&performance.now()<escIgnoreUntil) return; // Esc hat nur die Maus freigegeben
   keys[k.toLowerCase()]=true; keys[k]=true;
   audioInit(); if(AC&&AC.state==='suspended') AC.resume();
   if(e.repeat) return;
@@ -326,49 +325,49 @@ window.addEventListener('keydown', e=>{
   else if(k==='f'||k==='F') { if(G.mode==='fly'){ P.flaps=!P.flaps; setMsg(P.flaps?'Landeklappen AUSGEFAHREN':'Landeklappen EINGEFAHREN'); } }
   else if(k==='g'||k==='G') { if(G.mode==='fly'){ P.gear=!P.gear; setMsg(P.gear?'Fahrwerk AUSGEFAHREN':'Fahrwerk EINGEFAHREN'); } }
   else if(k==='1'||k==='2'||k==='3') selectWeapon(+k-1);
-  else if(k==='Home') { MOUSE.x=0; MOUSE.y=0; setMsg('Knüppel mittig',1); }
 });
 function selectWeapon(i){
   P.weapon=((i%3)+3)%3;
   document.getElementById('btnWeapon').textContent='Waffe: '+WEAPON_NAME[P.weapon]+' (1/2/3)';
   if(G.mode==='fly') setMsg('Waffe: '+WEAPON_NAME[P.weapon],1.5);
 }
-// Maus: Klick ins Bild fängt den Zeiger, Bewegung = Steuerknüppel, links = Feuer, rechts = Kanone, Rad = Gas
-let escIgnoreUntil=0;
+// Maus: Klick ins Bild übernimmt die Steuerung. Die Zeigerposition ist der Knüppel (Visier = Mitte),
+// links = Feuer, rechts = Kanone, Rad = Gas. Verlässt die Maus das Bild, gibt sie die Steuerung ab
+// und das Spiel pausiert – die Seite lässt sich dann normal scrollen.
+function mouseStick(e){
+  const rc=canvas.getBoundingClientRect();
+  const dz=v=>Math.abs(v)<0.04?0:Math.sign(v)*(Math.abs(v)-0.04)/0.96; // kleine Totzone ums Visier
+  MOUSE.x=clamp(dz(((e.clientX-rc.left)/rc.width*VW-VW/2)/(VW*0.4)),-1,1);
+  MOUSE.y=clamp(dz(((e.clientY-rc.top)/rc.height*VH-VH*0.46)/(VH*0.4)),-1,1); // unter dem Visier = ziehen
+}
+function mouseRelease(){ MOUSE.active=false; MOUSE.x=MOUSE.y=0; MOUSE.l=MOUSE.r=false; }
 canvas.addEventListener('mousedown', e=>{
   audioInit(); if(AC&&AC.state==='suspended') AC.resume();
   if(G.mode==='title') resetMission();
-  if(!MOUSE.locked){
-    if(canvas.requestPointerLock) canvas.requestPointerLock();
-    if(G.paused) G.paused=false;
-    e.preventDefault(); return;
+  if(!MOUSE.active||G.paused){
+    MOUSE.active=true; G.paused=false; mouseStick(e); e.preventDefault();
+    status('Maussteuerung aktiv: Zeiger = Knüppel (Visier = Mitte), links = Feuer, rechts = Kanone, Rad = Gas. Maus aus dem Bild = Pause.');
+    return;
   }
   if(e.button===0) MOUSE.l=true;
   else if(e.button===2) MOUSE.r=true;
-  else if(e.button===1){ MOUSE.x=0; MOUSE.y=0; e.preventDefault(); }
+  e.preventDefault();
 });
 window.addEventListener('mouseup', e=>{ if(e.button===0) MOUSE.l=false; else if(e.button===2) MOUSE.r=false; });
 canvas.addEventListener('contextmenu', e=>e.preventDefault());
-document.addEventListener('mousemove', e=>{
-  if(!MOUSE.locked||G.mode!=='fly'||G.paused) return;
-  if(Math.abs(e.movementX)>200||Math.abs(e.movementY)>200) return; // Ausreißer mancher Browser beim Pointer-Lock
-  MOUSE.x=clamp(MOUSE.x+e.movementX*MOUSE.sens,-1,1);
-  MOUSE.y=clamp(MOUSE.y+e.movementY*MOUSE.sens,-1,1);  // Maus zu sich = ziehen
+canvas.addEventListener('mousemove', e=>{ if(MOUSE.active&&G.mode==='fly'&&!G.paused) mouseStick(e); });
+canvas.addEventListener('mouseleave', ()=>{
+  if(!MOUSE.active) return;
+  mouseRelease();
+  if(G.mode==='fly'&&!G.paused){ G.paused=true; status('PAUSE – Maus hat das Bild verlassen. Klick ins Bild oder P = weiter.'); }
 });
 canvas.addEventListener('wheel', e=>{
-  if(G.mode!=='fly') return;
+  if(!MOUSE.active||G.mode!=='fly'||G.paused) return; // sonst scrollt die Seite normal
   e.preventDefault();
   P.throttle=clamp(P.throttle-Math.sign(e.deltaY)*0.05,0,1);
 },{passive:false});
-document.addEventListener('pointerlockchange', ()=>{
-  MOUSE.locked=document.pointerLockElement===canvas;
-  if(!MOUSE.locked){
-    MOUSE.l=MOUSE.r=false;
-    if(G.mode==='fly'&&!G.paused){ G.paused=true; escIgnoreUntil=performance.now()+300; status('PAUSE – Maus freigegeben. Klick ins Bild = weiter'); }
-  } else status('Maussteuerung aktiv: Bewegung = Knüppel, links = Feuer, rechts = Kanone, Rad = Gas, Mitteltaste = Knüppel mittig. Esc gibt die Maus frei.');
-});
 window.addEventListener('keyup', e=>{ keys[e.key.toLowerCase()]=false; keys[e.key]=false; });
-window.addEventListener('blur', ()=>{ keys={}; MOUSE.l=MOUSE.r=false; });
+window.addEventListener('blur', ()=>{ keys={}; mouseRelease(); });
 
 // Buttons
 document.getElementById('btnStart').onclick=()=>{ audioInit(); resetMission(); };

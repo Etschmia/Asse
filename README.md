@@ -15,7 +15,7 @@ Live: **https://brett.martuni.de/**
 - Flugmodell mit Kräften: Auftrieb über Anstellwinkel, Luftdichte nach Höhe,
   DB-605-Leistung mit Volldruckhöhe, Ruderwirkung über Staudruck, Abriss mit
   Abkippen, g-Begrenzung durch Steuerkräfte, Grau-/Rotsehen, Trimmung
-- Maussteuerung (Pointer-Lock) zusätzlich zur Tastatur
+- Maussteuerung per Zeigerposition zusätzlich zur Tastatur; Maus verlässt das Bild = Pause
 - Waffenwahl: 2× MG 131, MG 151/20 oder beide
 - Gegner-KI in Wellen: Spitfire Mk.V, P-51 Mustang, B-17-Bomber (ab Welle 2)
 - Flak, Wolken, Dörfer/Wälder, Flugplatz mit Notlandung + Aufmunitionierung
@@ -42,12 +42,11 @@ Live: **https://brett.martuni.de/**
 | `←` / `→` | Querruder: rollen (Rollrate abhängig von der Fahrt) |
 | `↑` / `↓` | Höhenruder: drücken / ziehen (wie Steuerknüppel) |
 | `Q` / `E` | Höhentrimmung kopflastig / schwanzlastig |
-| `Pos1` | Maus-Knüppel mittig |
 | `A` / `D` | Seitenruder links / rechts (Gieren, Schieben) |
 | `W` / `S` oder `+` / `-` | Gas mehr / weniger |
 | `Leertaste` | Feuern mit gewählter Waffe |
 | `1` / `2` / `3` | Waffe: MG 131 / MG 151/20 / beide |
-| Maus | Klick ins Bild = Maussteuerung: Bewegung = Knüppel, links = Feuer, rechts = Kanone, Rad = Gas, `Esc` = freigeben |
+| Maus | Klick ins Bild = Maussteuerung: Zeigerposition = Knüppel (Visier = Mitte), links = Feuer, rechts = Kanone, Rad = Gas; Maus aus dem Bild = Pause |
 | `F` | Landeklappen umschalten |
 | `G` | Fahrwerk ein / aus |
 | `M` | Taktische Karte ein / aus |
