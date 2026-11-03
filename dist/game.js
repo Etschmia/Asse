@@ -2833,6 +2833,13 @@ function drawMenu(){
 
 // ---------- Loop ----------
 let last=performance.now();
+// Beschriftung des Schnellstart-Buttons: Enter wirkt nur außerhalb des Flugs als Start
+const btnStartEl=document.getElementById('btnStart');
+let startLabel='';
+function updateStartLabel(){
+  const l=(G.mission&&(G.mode==='fly'||G.mode==='dead'))?'▶ Schnellstart (Einsatz verwerfen)':(G.mode==='fly'?'▶ Schnellstart (neu)':'▶ Schnellstart (Enter)');
+  if(l!==startLabel){ startLabel=l; btnStartEl.textContent=l; }
+}
 function loop(now){
   let dt=(now-last)/1000; last=now;
   dt=Math.min(0.05,dt);
@@ -2840,6 +2847,7 @@ function loop(now){
   update(dt);
   engineSound(dt);
   draw();
+  updateStartLabel();
   requestAnimationFrame(loop);
 }
 
