@@ -601,7 +601,7 @@ function endMission(how){
     promo:after[0]>before[0]?after[1]:'', awards:c.awards.filter(a=>!aw0.includes(a))};
   G.mode='debrief'; G.paused=false; G.mission=null; G.brief=null; G.menu=false;
   bullets=[]; ebullets=[]; bombs=[];
-  autosave();
+  G.debrief.autoOk=autosave();
   status('Einsatzbericht: '+res+' – '+total+' Punkte. ENTER = nächste Einsatzbesprechung, O = Spielstände.');
 }
 
@@ -616,12 +616,12 @@ function snapshot(){
   const d={v:1, at:Date.now(), career:CAREER, brief:G.brief, mode:G.mode==='briefing'?'briefing':'idle'};
   if(G.mode==='fly'&&!P.dead){
     d.mode='fly';
-    d.flight={seed:G.seed, wx:G.wx, mission:G.mission, P, enemies, friends, nextId:G.nextId,
+    d.flight={seed:G.seed, wx:G.wx, mission:G.mission, P, enemies, friends, bombs, nextId:G.nextId,
       G:{kills:G.kills, score:G.score, killLog:G.killLog, wave:G.wave, waveClear:G.waveClear, nextWaveT:G.nextWaveT, time:G.time, flakWarned:G.flakWarned, target:G.target?G.target.id:0}};
   }
   return d;
 }
-function autosave(){ storeSet(SAVE_KEY+0, JSON.stringify({v:1, at:Date.now(), career:CAREER, brief:null, mode:'idle'})); }
+function autosave(){ return storeSet(SAVE_KEY+0, JSON.stringify({v:1, at:Date.now(), career:CAREER, brief:null, mode:'idle'})); }
 function refreshMenu(){ G.menuInfo=[0,1,2,3].map(slotInfo); }
 function openMenu(){
   G.menu=true; G.menuMsg=''; G.menuDel=-1; refreshMenu();
@@ -645,6 +645,7 @@ function loadSlot(i){
   if(!d){ G.menuMsg='Platz '+(i?i:'A')+' ist leer.'; return; }
   CAREER=Object.assign(newCareer(), d.career||{});
   G.brief=d.brief||null; G.menu=false; G.debrief=null;
+  if(!d.flight&&G.brief) buildWorld(G.brief.wseed,G.brief.wx);
   if(d.flight){
     const f=d.flight;
     buildWorld(f.seed, f.wx);
@@ -652,7 +653,7 @@ function loadSlot(i){
     G.mission=f.mission||null;
     if(G.mission) addMissionStatics(G.mission);
     Object.assign(P, f.P);
-    enemies=f.enemies||[]; friends=f.friends||[]; G.nextId=f.nextId||1;
+    enemies=f.enemies||[]; friends=f.friends||[]; bombs=f.bombs||[]; G.nextId=f.nextId||1;
     const g=f.G||{};
     G.kills=g.kills||0; G.score=g.score||0; G.killLog=g.killLog||{}; G.wave=g.wave||0; G.waveClear=!!g.waveClear; G.nextWaveT=g.nextWaveT||0; G.time=g.time||0; G.flakWarned=!!g.flakWarned;
     G.target=enemies.find(e=>e.id===g.target&&e.alive)||null;
@@ -874,7 +875,7 @@ window.addEventListener('keyup', e=>{ keys[e.key.toLowerCase()]=false; keys[e.ke
 window.addEventListener('blur', ()=>{ keys={}; mouseRelease(); });
 
 // Buttons (danach Fokus abgeben, sonst löst Enter/Leertaste den Button erneut aus)
-document.getElementById('btnStart').onclick=()=>{ audioInit(); quickStart(); };
+document.getElementById('btnStart').onclick=()=>{ audioInit(); if(G.mission&&(G.mode==='fly'||G.mode==='dead')&&!confirmTwice('q','Einsatz verwerfen (ohne Wertung) und Schnellstart? Nochmal klicken')) return; quickStart(); };
 document.getElementById('btnMission').onclick=()=>{ audioInit(); if(G.mode==='briefing') startAirfield(G.brief); else if(G.mode==='fly'||G.mode==='dead') missionKey(); else openBriefing(); };
 document.getElementById('btnSave').onclick=()=>{ if(G.menu) closeMenu(); else openMenu(); };
 document.getElementById('btnHelp').onclick=HELP_TOGGLE;
@@ -2798,7 +2799,7 @@ function drawDebrief(){
   ctx.font='bold 4.5px '+MONO; ctx.fillStyle='#ffaa00'; ctx.fillText('LETZTE EINSÄTZE',200,70);
   ctx.font='4px '+MONO;
   CAREER.log.slice(0,10).forEach((e,i)=>{ ctx.fillStyle=e.r==='ERFOLG'?'#9fdc9f':(e.r==='TEILERFOLG'?'#e8d080':'#e09080'); ctx.fillText(MNAME[e.t].slice(0,13).padEnd(14)+e.r.slice(0,10).padEnd(11)+String(e.p).padStart(5),200,77+i*5); });
-  ctx.fillStyle='#888'; ctx.fillText('Automatisch gespeichert (Platz A).',200,132);
+  ctx.fillStyle='#888'; ctx.fillText(d.autoOk===false?'SPEICHERN FEHLGESCHLAGEN – Browser-Speicher gesperrt/voll!':'Automatisch gespeichert (Platz A).',200,132);
   boardFoot('ENTER = NÄCHSTE EINSATZBESPRECHUNG','O = Spielstände   ESC = Titel   H = Hilfe');
 }
 function slotText(d){
